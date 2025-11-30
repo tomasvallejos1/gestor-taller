@@ -44,3 +44,5 @@ input {
   border-radius: 5px;
   border: 1px solid #ccc;
 }
+
+.sidebar-link:hover { background-color: #34495e; }
