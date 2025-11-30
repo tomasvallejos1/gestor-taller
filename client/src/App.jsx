@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Status from './pages/Status';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Motores from './pages/Motores';
 
 function App() {
   const location = useLocation();
@@ -36,8 +37,7 @@ function App() {
           {/* Rutas Privadas del Sistema */}
           <Route path="/sistema/home" element={<Dashboard />} />
           
-          {/* Aquí agregaremos las otras rutas del menú poco a poco */}
-          <Route path="/sistema/motores" element={<h2>Gestión de Motores (Próximamente)</h2>} />
+          <Route path="/sistema/motores" element={<Motores />} />
         </Routes>
       </div>
     </div>
