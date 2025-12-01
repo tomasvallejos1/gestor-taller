@@ -99,15 +99,15 @@ const Home = () => {
             <h3 style={{ color: 'white', marginBottom: '20px', fontSize: '1.2rem', textTransform: 'uppercase' }}>Contacto y Ubicación</h3>
             <p style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.2rem' }}>📍</span> 
-              Calle Falsa 123, Ciudad
+              Calle 26 de Abril n° 97, Venado Tuerto, Santa Fe
             </p>
             <p style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.2rem' }}>📞</span> 
-              (3462) 555-000
+              (3462) 553285
             </p>
             <p style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '1.2rem' }}>✉️</span> 
-              info@bobinadosdavid.com
+              jdavid39val@yahoo.com.ar
             </p>
           </div>
 
