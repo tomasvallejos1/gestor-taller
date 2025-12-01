@@ -35,7 +35,8 @@ const Sidebar = ({ isOpen, closeMenu }) => {
         {/* LOGO CON ENLACE AL HOME */}
         <div style={{ marginBottom: '30px', textAlign: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '20px' }}>
           <Link to="/sistema/home" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-            <h3 style={{ margin: 0, color: '#38bdf8', cursor: 'pointer' }}>BOBINADOS DAVID</h3>
+            {/* CAMBIO AQUÍ: color: 'white' para igualar al móvil */}
+            <h3 style={{ margin: 0, color: 'white', cursor: 'pointer', fontWeight: '700', fontSize: '1.3rem' }}>BOBINADOS DAVID</h3>
             <small style={{ color: '#94a3b8', cursor: 'pointer', fontSize: '0.85rem' }}>Sistema de Gestión</small>
           </Link>
         </div>

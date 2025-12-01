@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Routes, Route, useLocation, Link } from 'react-router-dom'; // Importamos Link
+import { Routes, Route, useLocation, Link } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
@@ -12,19 +12,15 @@ import MotorForm from './pages/MotorForm';
 function App() {
   const location = useLocation();
   const isSystemRoute = location.pathname.startsWith('/sistema');
-
-  // Estado para controlar el menú móvil
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div style={isSystemRoute ? { display: 'flex', flexDirection: 'column' } : {}}>
+    <div className="app-container">
       
       {isSystemRoute ? (
         <>
-          {/* HEADER MÓVIL (Solo visible en celular) */}
-          <div className="mobile-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            
-            {/* Título con enlace - Forzamos estilo flex para asegurar que se vea */}
+          {/* HEADER MÓVIL (Controlado por CSS para que solo salga en celular) */}
+          <div className="mobile-header">
             <Link 
               to="/sistema/home" 
               onClick={() => setMobileMenuOpen(false)} 
@@ -34,33 +30,28 @@ function App() {
                 Bobinados David
               </h3>
             </Link>
-
-            {/* Botón de 3 barritas */}
             <button 
               className="hamburger-btn" 
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}
             >
               ☰
             </button>
           </div>
 
-          {/* Pasamos el estado al Sidebar */}
           <Sidebar isOpen={mobileMenuOpen} closeMenu={() => setMobileMenuOpen(false)} />
         </>
       ) : (
         <Navbar />
       )}
 
-      {/* Contenedor Principal */}
-      <div className={isSystemRoute ? "main-content" : ""} style={isSystemRoute ? { marginLeft: '250px', padding: '20px', width: '100%', background: '#f4f6f7', minHeight: '100vh', boxSizing: 'border-box' } : { width: '100%' }}>
+      {/* CONTENEDOR PRINCIPAL */}
+      {/* Si es ruta de sistema, usa la clase 'system-content', si no, 'public-content' */}
+      <div className={isSystemRoute ? "system-content" : "public-content"}>
         <Routes>
-          {/* Rutas Públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/estado" element={<Status />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Rutas del Sistema */}
           <Route path="/sistema/home" element={<Dashboard />} />
           <Route path="/sistema/motores" element={<Motores />} />
           <Route path="/sistema/motores/nuevo" element={<MotorForm />} />
