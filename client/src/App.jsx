@@ -6,6 +6,8 @@ import Status from './pages/Status';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Motores from './pages/Motores';
+import MotorForm from './pages/MotorForm';
+
 
 function App() {
   const location = useLocation();
@@ -38,6 +40,10 @@ function App() {
           <Route path="/sistema/home" element={<Dashboard />} />
           
           <Route path="/sistema/motores" element={<Motores />} />
+          <Route path="/sistema/home" element={<Dashboard />} />
+          <Route path="/sistema/motores" element={<Motores />} />
+          <Route path="/sistema/motores/nuevo" element={<MotorForm />} />
+          <Route path="/sistema/motores/editar/:id" element={<MotorForm />} />  
         </Routes>
       </div>
     </div>

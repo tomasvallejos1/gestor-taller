@@ -38,20 +38,14 @@ const Sidebar = () => {
         <h3>BOBINADOS DAVID</h3>
         <small>Sistema de Gestión</small>
       </div>
-
-      <nav>
-        {/* Enlaces basados en tu PDF Pag 4 */}
-        <Link to="/sistema/home" style={linkStyle} className="sidebar-link">🏠 Home</Link>
-        <Link to="/sistema/reparaciones" style={linkStyle} className="sidebar-link">🛠️ Reparaciones</Link>
-        <Link to="/sistema/motores" style={linkStyle} className="sidebar-link">⚙️ Motores</Link>
-        <Link to="/sistema/clientes" style={linkStyle} className="sidebar-link">👥 Clientes</Link>
-        <Link to="/sistema/facturacion" style={linkStyle} className="sidebar-link">💰 Facturación</Link>
-        <Link to="/sistema/informes" style={linkStyle} className="sidebar-link">📊 Informes</Link>
-        
-        <div style={{ marginTop: 'auto', borderTop: '1px solid #34495e', paddingTop: '20px' }}>
-          <Link to="/" style={{...linkStyle, color: '#e74c3c'}}>🚪 Cerrar Sesión</Link>
-        </div>
-      </nav>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+          <Link to="/sistema/home" style={linkStyle}>INICIO</Link>
+          <Link to="/sistema/reparaciones" style={linkStyle}>REPARACIONES</Link>
+          <Link to="/sistema/motores" style={linkStyle}>MOTORES</Link>
+          <Link to="/sistema/clientes" style={linkStyle}>CLIENTES</Link>
+          <Link to="/sistema/facturacion" style={linkStyle}>FACTURACIÓN</Link>
+          <Link to="/sistema/informes" style={linkStyle}>INFORMES</Link>
+        </nav>
     </div>
   );
 };

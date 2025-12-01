@@ -1,48 +1,97 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
-  --primary: #333;
-  --accent: #d4a373;
-  --bg-color: #ffffff; /* CAMBIO: Fondo blanco puro */
-  --text-color: #333;
+  /* Paleta Profesional 'Industrial Tech' */
+  --primary: #0f172a;       /* Azul Noche (Para barras laterales y botones principales) */
+  --primary-light: #1e293b; /* Un poco más claro */
+  --accent: #0284c7;        /* Azul Eléctrico (Para acciones y enlaces) */
+  --bg-app: #f1f5f9;        /* Gris muy claro (Fondo de pantalla) */
+  --surface: #ffffff;       /* Blanco puro (Tarjetas) */
+  --text-main: #334155;     /* Gris oscuro (Texto principal) */
+  --text-light: #64748b;    /* Gris medio (Etiquetas) */
+  --border: #e2e8f0;        /* Bordes sutiles */
+  --danger: #ef4444;        /* Rojo alertas */
+  --success: #10b981;       /* Verde éxito */
+  
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  min-height: 100vh;
+  font-family: 'Inter', sans-serif; /* Tipografía limpia y moderna */
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Utilidades generales */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* Estilos de Utilidad */
+h1, h2, h3, h4 {
+  color: var(--primary);
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px; /* Hace que los títulos se vean más compactos y modernos */
 }
 
-/* Botones */
+/* Botones Modernos */
 .btn {
-  display: inline-block; /* Asegura que el botón tenga forma */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+
+.btn-primary {
   background-color: var(--primary);
   color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: bold;
-  transition: background 0.3s;
+}
+.btn-primary:hover { background-color: var(--primary-light); transform: translateY(-1px); }
+
+.btn-secondary {
+  background-color: white;
+  color: var(--text-main);
+  border: 1px solid var(--border);
+}
+.btn-secondary:hover { background-color: #f8fafc; color: var(--primary); }
+
+/* Inputs Profesionales */
+input, select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  color: var(--text-main);
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
 
-.btn:hover {
-  background-color: #555;
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); /* Resplandor azul suave */
+  background: white;
 }
 
-/* Inputs */
-input {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+input:disabled, textarea:disabled {
+  background-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
 }
 
-.sidebar-link:hover { background-color: #34495e; }
+/* Tarjetas (Cards) */
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 24px;
+}
