@@ -5,6 +5,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 
+
 // Imports de páginas
 import Home from './pages/Home';
 import Status from './pages/Status';
@@ -14,6 +15,7 @@ import Motores from './pages/Motores';
 import MotorForm from './pages/MotorForm';
 import Ajustes from './pages/Ajustes';
 import ForgotPassword from './pages/ForgotPassword';
+import ComingSoon from './pages/ComingSoon';
 
 
 function App() {
@@ -64,32 +66,39 @@ function App() {
           <Route path="/estado" element={<Status />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Rutas Protegidas */}
+{/* Rutas Protegidas (SISTEMA) */}
           <Route path="/sistema/home" element={
             <ProtectedRoute> <Dashboard /> </ProtectedRoute>
           } />
           
-          <Route path="/sistema/motores" element={
-            <ProtectedRoute> <Motores /> </ProtectedRoute>
+          {/* MÓDULO MOTORES (YA LISTO) */}
+          <Route path="/sistema/motores" element={<ProtectedRoute> <Motores /> </ProtectedRoute>} />
+          <Route path="/sistema/motores/nuevo" element={<ProtectedRoute> <MotorForm /> </ProtectedRoute>} />
+          <Route path="/sistema/motores/editar/:id" element={<ProtectedRoute> <MotorForm /> </ProtectedRoute>} />
+          <Route path="/sistema/motores/ver/:id" element={<ProtectedRoute> <MotorForm /> </ProtectedRoute>} />
+
+          {/* AJUSTES (YA LISTO) */}
+          <Route path="/sistema/ajustes" element={<ProtectedRoute> <Ajustes /> </ProtectedRoute>} />
+
+          {/* --- FUNCIONALIDADES PENDIENTES (PRÓXIMAMENTE) --- */}
+          <Route path="/sistema/reparaciones" element={
+            <ProtectedRoute> <ComingSoon title="Módulo de Reparaciones" /> </ProtectedRoute>
           } />
           
-          <Route path="/sistema/motores/nuevo" element={
-            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          <Route path="/sistema/clientes" element={
+            <ProtectedRoute> <ComingSoon title="Gestión de Clientes" /> </ProtectedRoute>
           } />
           
-          <Route path="/sistema/motores/editar/:id" element={
-            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          <Route path="/sistema/facturacion" element={
+            <ProtectedRoute> <ComingSoon title="Sistema de Facturación" /> </ProtectedRoute>
           } />
           
-          <Route path="/sistema/motores/ver/:id" element={
-            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          <Route path="/sistema/informes" element={
+            <ProtectedRoute> <ComingSoon title="Informes y Estadísticas" /> </ProtectedRoute>
           } />
 
-          {/* 4. REDIRECCIÓN DE SEGURIDAD PARA LA RAÍZ "/sistema"
-              Si alguien pone solo "/sistema", lo mandamos al home (o al login si no tiene permiso)
-          */}
+          {/* Ruta Catch-all */}
           <Route path="/sistema" element={<Navigate to="/sistema/home" replace />} />
-          <Route path="/sistema/ajustes" element={<ProtectedRoute> <Ajustes /> </ProtectedRoute>} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
       </div>

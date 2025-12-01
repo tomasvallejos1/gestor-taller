@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+// Si existe la variable VITE_API_URL úsala, sino usa localhost
+const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:4000/api', // Asegúrate de que el puerto sea el correcto
+  baseURL: baseURL,
 });
 
 // Antes de que salga cualquier petición, este código se ejecuta:
