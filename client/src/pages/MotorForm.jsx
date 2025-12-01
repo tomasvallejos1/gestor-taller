@@ -179,7 +179,7 @@ const MotorForm = () => {
         </div>
 
         <h3 style={sectionHeader}>2. Datos de Bobinado</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+        <div className="grid-responsive">
           
           {/* Tarjeta Arranque */}
           <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border:'1px solid #e2e8f0' }}>

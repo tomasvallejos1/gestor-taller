@@ -1,18 +1,18 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, closeMenu }) => {
   const sidebarStyle = {
-    width: '250px',
-    height: '100vh', // Altura completa
-    background: '#2c3e50', // Color oscuro profesional
+    height: '100vh',
+    background: '#0f172a',
     color: 'white',
     display: 'flex',
     flexDirection: 'column',
     padding: '20px',
     boxSizing: 'border-box',
-    position: 'fixed', // Para que se quede fijo
+    position: 'fixed',
+    top: 0,
     left: 0,
-    top: 0
   };
 
   const linkStyle = {
@@ -20,33 +20,45 @@ const Sidebar = () => {
     textDecoration: 'none',
     padding: '15px 10px',
     display: 'block',
-    borderRadius: '5px',
-    marginBottom: '5px',
-    transition: 'background 0.3s'
-  };
-
-  const logoStyle = {
-    marginBottom: '40px',
-    textAlign: 'center',
-    borderBottom: '1px solid #34495e',
-    paddingBottom: '20px'
+    borderRadius: '6px',
+    marginBottom: '8px',
+    fontSize: '0.95rem',
+    fontWeight: '500',
+    transition: 'background 0.2s'
   };
 
   return (
-    <div style={sidebarStyle}>
-      <div style={logoStyle}>
-        <h3>BOBINADOS DAVID</h3>
-        <small>Sistema de Gestión</small>
-      </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <Link to="/sistema/home" style={linkStyle}>INICIO</Link>
-          <Link to="/sistema/reparaciones" style={linkStyle}>REPARACIONES</Link>
-          <Link to="/sistema/motores" style={linkStyle}>MOTORES</Link>
-          <Link to="/sistema/clientes" style={linkStyle}>CLIENTES</Link>
-          <Link to="/sistema/facturacion" style={linkStyle}>FACTURACIÓN</Link>
-          <Link to="/sistema/informes" style={linkStyle}>INFORMES</Link>
+    <>
+      {/* El Sidebar en sí */}
+      <div className={`sidebar ${isOpen ? 'open' : ''}`} style={sidebarStyle}>
+        
+        {/* LOGO CON ENLACE AL HOME */}
+        <div style={{ marginBottom: '30px', textAlign: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '20px' }}>
+          <Link to="/sistema/home" onClick={closeMenu} style={{ textDecoration: 'none' }}>
+            <h3 style={{ margin: 0, color: '#38bdf8', cursor: 'pointer' }}>BOBINADOS DAVID</h3>
+            <small style={{ color: '#94a3b8', cursor: 'pointer', fontSize: '0.85rem' }}>Sistema de Gestión</small>
+          </Link>
+        </div>
+
+        <nav style={{ display: 'flex', flexDirection: 'column' }}>
+          <Link to="/sistema/home" style={linkStyle} onClick={closeMenu}>INICIO</Link>
+          <Link to="/sistema/reparaciones" style={linkStyle} onClick={closeMenu}>REPARACIONES</Link>
+          <Link to="/sistema/motores" style={linkStyle} onClick={closeMenu}>MOTORES</Link>
+          <Link to="/sistema/clientes" style={linkStyle} onClick={closeMenu}>CLIENTES</Link>
+          <Link to="/sistema/facturacion" style={linkStyle} onClick={closeMenu}>FACTURACIÓN</Link>
+          <Link to="/sistema/informes" style={linkStyle} onClick={closeMenu}>INFORMES</Link>
         </nav>
-    </div>
+        
+        <div style={{ marginTop: 'auto' }}>
+           <Link to="/" style={{...linkStyle, color: '#ef4444', borderTop: '1px solid #1e293b'}} onClick={closeMenu}>
+             CERRAR SESIÓN
+           </Link>
+        </div>
+      </div>
+
+      {/* Fondo oscuro para cerrar al hacer click afuera (Solo móvil) */}
+      <div className={`overlay ${isOpen ? 'show' : ''}`} onClick={closeMenu}></div>
+    </>
   );
 };
 

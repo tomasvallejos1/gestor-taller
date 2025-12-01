@@ -95,3 +95,108 @@ input:disabled, textarea:disabled {
   border: 1px solid var(--border);
   padding: 24px;
 }
+
+/* --- RESPONSIVIDAD (MÓVIL) --- */
+
+/* Clases de Utilidad para Grillas */
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columnas en PC */
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 columnas en PC */
+  gap: 24px;
+}
+
+/* Contenedor de Tabla con Scroll */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto; /* Permite deslizar la tabla horizontalmente en celular */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Header Móvil (Solo visible en celular) */
+.mobile-header {
+  display: none; /* Oculto en PC */
+  background: var(--primary);
+  color: white;
+  padding: 15px 20px;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+}
+
+/* --- REGLAS PARA PANTALLAS PEQUEÑAS (Celulares < 768px) --- */
+@media (max-width: 768px) {
+  
+  /* 1. Ajuste de Grillas: Todo a 1 columna */
+  .grid-responsive, .grid-responsive-2 {
+    grid-template-columns: 1fr !important;
+    gap: 15px;
+  }
+
+  /* 2. Menú Lateral (Sidebar) */
+  .sidebar {
+    transform: translateX(-100%); /* Oculto a la izquierda por defecto */
+    transition: transform 0.3s ease;
+    z-index: 2000;
+    width: 280px !important; /* Un poco más ancho en móvil */
+    box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+  }
+
+  .sidebar.open {
+    transform: translateX(0); /* Se desliza hacia adentro */
+  }
+
+  /* 3. Contenido Principal */
+  .main-content {
+    margin-left: 0 !important; /* Ya no deja espacio a la izquierda */
+    padding: 15px !important;
+    width: 100% !important;
+  }
+
+  /* 4. Mostrar Header Móvil */
+  .mobile-header {
+    display: flex;
+  }
+
+  /* 5. Overlay (Fondo oscuro al abrir menú) */
+  .overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1500;
+    display: none;
+  }
+  .overlay.show {
+    display: block;
+  }
+
+  /* Ajustes de botones en tablas */
+  .btn {
+    width: 100%; /* Botones anchos en móvil */
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  
+  /* Ocultar columnas menos importantes en móvil si quieres (opcional) */
+  .hide-mobile {
+    display: none;
+  }
+}
