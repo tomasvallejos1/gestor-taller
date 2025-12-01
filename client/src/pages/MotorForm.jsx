@@ -179,9 +179,11 @@ const MotorForm = () => {
         </div>
 
         <h3 style={sectionHeader}>2. Datos de Bobinado</h3>
-        <div className="grid-responsive">
+        
+        {/* Contenedor de la grilla */}
+        <div className="grid-responsive-2" style={{ marginBottom: '40px' }}>
           
-          {/* Tarjeta Arranque */}
+          {/* Tarjeta Arranque (Sin height: 100%) */}
           <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border:'1px solid #e2e8f0' }}>
             <h4 style={cardTitleStyle}>Arranque</h4>
             <div style={{display:'grid', gap:'15px'}}>
@@ -192,7 +194,7 @@ const MotorForm = () => {
             </div>
           </div>
 
-          {/* Tarjeta Trabajo */}
+          {/* Tarjeta Trabajo (Sin height: 100%) */}
           <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border:'1px solid #e2e8f0' }}>
             <h4 style={cardTitleStyle}>Trabajo</h4>
             <div style={{display:'grid', gap:'15px'}}>

@@ -1,16 +1,17 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --primary: #0f172a;
+  /* Paleta Profesional 'Industrial Tech' */
+  --primary: #0f172a;       /* Azul Noche */
   --primary-light: #1e293b; 
-  --accent: #0284c7;
-  --bg-app: #f1f5f9;
-  --surface: #ffffff;
-  --text-main: #334155;
-  --text-light: #64748b;
-  --border: #e2e8f0;
-  --danger: #ef4444;
-  --success: #10b981;
+  --accent: #0284c7;        /* Azul Eléctrico */
+  --bg-app: #f1f5f9;        /* Gris muy claro */
+  --surface: #ffffff;       /* Blanco puro */
+  --text-main: #334155;     /* Gris oscuro */
+  --text-light: #64748b;    /* Gris medio */
+  --border: #e2e8f0;        /* Bordes sutiles */
+  --danger: #ef4444;        /* Rojo alertas */
+  --success: #10b981;       /* Verde éxito */
   
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --sidebar-width: 260px; /* Ancho fijo del menú en PC */
@@ -126,7 +127,7 @@ body {
   /* Ajustes de Tablas y Grillas */
   .grid-responsive, .grid-responsive-2 {
     grid-template-columns: 1fr !important;
-    gap: 15px;
+    gap: 30px; /* Aumentado a 30px para evitar superposición de tarjetas */
   }
   
   .btn { width: 100%; margin-bottom: 10px; }

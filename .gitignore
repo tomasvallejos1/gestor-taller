@@ -20,3 +20,5 @@ Thumbs.db
 # Build de producción (se genera automáticamente al desplegar)
 dist/
 build/
+
+server/seeder.js

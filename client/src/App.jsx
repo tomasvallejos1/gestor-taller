@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Motores from './pages/Motores';
 import MotorForm from './pages/MotorForm';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   const location = useLocation();
@@ -45,18 +46,35 @@ function App() {
       )}
 
       {/* CONTENEDOR PRINCIPAL */}
-      {/* Si es ruta de sistema, usa la clase 'system-content', si no, 'public-content' */}
+      {/* Si es ruta de sistema, usa la clase 'system-content', si no, 'public-content' */} 
       <div className={isSystemRoute ? "system-content" : "public-content"}>
         <Routes>
+          {/* PÚBLICAS */}
           <Route path="/" element={<Home />} />
           <Route path="/estado" element={<Status />} />
           <Route path="/login" element={<Login />} />
 
-          <Route path="/sistema/home" element={<Dashboard />} />
-          <Route path="/sistema/motores" element={<Motores />} />
-          <Route path="/sistema/motores/nuevo" element={<MotorForm />} />
-          <Route path="/sistema/motores/editar/:id" element={<MotorForm />} />
-          <Route path="/sistema/motores/ver/:id" element={<MotorForm />} /> 
+          {/* PRIVADAS (Con Candado) */}
+          <Route path="/sistema/home" element={
+            <ProtectedRoute> <Dashboard /> </ProtectedRoute>
+          } />
+          
+          <Route path="/sistema/motores" element={
+            <ProtectedRoute> <Motores /> </ProtectedRoute>
+          } />
+          
+          <Route path="/sistema/motores/nuevo" element={
+            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          } />
+          
+          <Route path="/sistema/motores/editar/:id" element={
+            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          } />
+          
+          <Route path="/sistema/motores/ver/:id" element={
+            <ProtectedRoute> <MotorForm /> </ProtectedRoute>
+          } />
+
         </Routes>
       </div>
     </div>
