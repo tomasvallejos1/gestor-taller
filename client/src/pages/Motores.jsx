@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
 import Modal from '../components/Modal';
+import { AuthContext } from '../context/AuthContext';
 
 const Motores = () => {
+  const { user } = useContext(AuthContext);
+  const canEdit = user?.rol === 'super' || user?.rol === 'editor';
+
   const [motores, setMotores] = useState([]);
   const [filteredMotores, setFilteredMotores] = useState([]);
 
@@ -107,18 +111,21 @@ const Motores = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
           <h2 style={{ fontSize: '1.75rem', color: '#0f172a', margin: 0 }}>Inventario de Motores</h2>
-          <p style={{ color: '#64748b', marginTop: '5px', fontSize: '0.9rem' }}>Gestión de fichas técnicas</p>
+          <p style={{ color: '#64748b', marginTop: '5px', fontSize: '0.9rem' }}>Gestión de fichas técnicas y equipos</p>
         </div>
-        <Link to="/sistema/motores/nuevo" className="btn btn-primary" style={{ background: '#0f172a', color: 'white', padding: '10px 20px', borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>
-          + NUEVA FICHA
-        </Link>
+        
+        {/* SOLO MOSTRAR SI TIENE PERMISO DE EDICIÓN */}
+        {canEdit && (
+          <Link to="/sistema/motores/nuevo" className="btn btn-primary" style={{ background: '#0f172a', color: 'white', padding: '10px 20px', borderRadius: '6px', textDecoration: 'none', fontWeight: '600', fontSize: '0.9rem' }}>
+            + NUEVA FICHA
+          </Link>
+        )}
       </div>
 
       {/* --- PANEL DE BÚSQUEDA --- */}
       <div style={{ background: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
         <h4 style={{ margin: '0 0 15px 0', color: '#334155', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filtros</h4>
         
-        {/* Usamos grid responsive automático */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', alignItems: 'end' }}>
           
           <div><label style={labelSearchStyle}>N° Ficha</label><input name="nroOrden" value={filters.nroOrden} onChange={handleFilterChange} placeholder="Ej: 5" style={inputSearchStyle} /></div>
@@ -148,10 +155,8 @@ const Motores = () => {
         </div>
       </div>
 
-      {/* --- TABLA DE RESULTADOS (RESPONSIVE) --- */}
+      {/* --- TABLA DE RESULTADOS --- */}
       <div style={{ background: 'white', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-        
-        {/* AQUÍ ESTÁ EL CAMBIO DEL PASO 5: Wrapper 'table-responsive' */}
         <div className="table-responsive">
           <table style={{ width: '100%', minWidth: '600px', borderCollapse: 'collapse' }}>
             <thead>
@@ -189,9 +194,16 @@ const Motores = () => {
                       </td>
                       <td style={tdStyle}>{motor.tipo || '-'}</td>
                       <td style={{...tdStyle, textAlign: 'right'}}>
+                        {/* SIEMPRE VISIBLE */}
                         <Link to={`/sistema/motores/ver/${linkId}`} style={{ fontWeight: '600', color: '#0284c7', marginRight: '15px', textDecoration: 'none', fontSize: '0.8rem' }}>VER</Link>
-                        <Link to={`/sistema/motores/editar/${linkId}`} style={{ fontWeight: '600', color: '#475569', marginRight: '15px', textDecoration: 'none', fontSize: '0.8rem' }}>EDITAR</Link>
-                        <button onClick={() => clickDelete(motor)} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}>ELIMINAR</button>
+                        
+                        {/* SOLO VISIBLE SI TIENE PERMISO */}
+                        {canEdit && (
+                          <>
+                            <Link to={`/sistema/motores/editar/${linkId}`} style={{ fontWeight: '600', color: '#475569', marginRight: '15px', textDecoration: 'none', fontSize: '0.8rem' }}>EDITAR</Link>
+                            <button onClick={() => clickDelete(motor)} style={{ background: 'none', border: 'none', color: '#ef4444', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}>ELIMINAR</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   );

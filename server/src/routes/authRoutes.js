@@ -3,9 +3,10 @@ import {
   loginUser, 
   registerUser, 
   forgotPassword, 
-  updateProfile, // <--- Nueva
-  getUsers,      // <--- Nueva
-  deleteUser     // <--- Nueva
+  updateProfile, 
+  getUsers,      
+  deleteUser,
+  updateUserById     
 } from '../controllers/authController.js';
 import { protect, admin } from '../middlewares/authMiddleware.js';
 
@@ -22,5 +23,6 @@ router.put('/profile', protect, updateProfile);
 router.post('/register', protect, admin, registerUser); // Crear usuario
 router.get('/users', protect, admin, getUsers);         // Listar usuarios
 router.delete('/users/:id', protect, admin, deleteUser); // Eliminar usuario
+router.put('/users/:id', protect, admin, updateUserById); //Editar usuario
 
 export default router;

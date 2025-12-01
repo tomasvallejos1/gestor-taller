@@ -148,3 +148,33 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// 7. ACTUALIZAR USUARIO POR ID (Solo Admin)
+export const updateUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (user) {
+      user.nombre = req.body.nombre || user.nombre;
+      user.email = req.body.email || user.email;
+      user.rol = req.body.rol || user.rol;
+
+      if (req.body.password) {
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
+      }
+
+      const updatedUser = await user.save();
+      res.json({
+        _id: updatedUser._id,
+        nombre: updatedUser.nombre,
+        email: updatedUser.email,
+        rol: updatedUser.rol,
+      });
+    } else {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

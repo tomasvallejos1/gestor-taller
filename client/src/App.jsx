@@ -12,6 +12,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Motores from './pages/Motores';
 import MotorForm from './pages/MotorForm';
+import Ajustes from './pages/Ajustes';
+
 
 function App() {
   const { user } = useContext(AuthContext); // <--- 2. Obtenemos el usuario actual
@@ -86,7 +88,7 @@ function App() {
               Si alguien pone solo "/sistema", lo mandamos al home (o al login si no tiene permiso)
           */}
           <Route path="/sistema" element={<Navigate to="/sistema/home" replace />} />
-
+          <Route path="/sistema/ajustes" element={<ProtectedRoute> <Ajustes /> </ProtectedRoute>} />
         </Routes>
       </div>
     </div>
