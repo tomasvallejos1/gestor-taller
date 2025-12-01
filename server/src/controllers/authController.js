@@ -178,3 +178,37 @@ export const updateUserById = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// 4. RESTABLECER CONTRASEÑA FINAL (Verificar código y cambiar clave)
+export const resetPassword = async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  try {
+    // Buscar usuario por email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    // Verificar si el código coincide y si no expiró
+    if (user.resetToken !== code || user.resetTokenExpire < Date.now()) {
+      return res.status(400).json({ message: 'Código inválido o expirado' });
+    }
+
+    // Encriptar la nueva contraseña
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Limpiar el token usado
+    user.resetToken = undefined;
+    user.resetTokenExpire = undefined;
+
+    await user.save();
+
+    res.json({ message: 'Contraseña restablecida con éxito' });
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

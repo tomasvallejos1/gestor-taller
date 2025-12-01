@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Login = () => {
@@ -9,64 +9,131 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [cargando, setCargando] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setCargando(true);
+    setIsSubmitting(true);
 
     try {
       await login(email, password);
-      // Si funciona, nos manda al home del sistema
       navigate('/sistema/home');
     } catch (err) {
-      // Si falla, mostramos el error
       setError(err.response?.data?.message || 'Credenciales incorrectas');
     } finally {
-      setCargando(false);
+      setIsSubmitting(false);
     }
   };
 
-  const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f1f5f9' };
-  const cardStyle = { background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px', textAlign: 'center' };
-  const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #e2e8f0', background: '#f8fafc' };
-
   return (
-    <div style={containerStyle}>
-      <div style={cardStyle}>
-        <h2 style={{ color: '#0f172a', marginBottom: '10px' }}>Bienvenido</h2>
-        <p style={{ marginBottom: '30px', color: '#64748b' }}>Ingresa tus credenciales para acceder</p>
+    <div style={{ 
+      minHeight: '100vh', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: 'radial-gradient(circle at center, #1e293b 0%, #0f172a 100%)', // Fondo oscuro moderno
+      padding: '20px'
+    }}>
+      
+      <div style={{ 
+        background: 'white', 
+        padding: '50px 40px', 
+        borderRadius: '16px', 
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)', 
+        width: '100%', 
+        maxWidth: '420px' 
+      }}>
+        
+        {/* Encabezado */}
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <div style={{ 
+            width: '60px', height: '60px', background: '#0f172a', borderRadius: '12px', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px auto',
+            color: '#38bdf8', fontSize: '1.8rem'
+          }}>
+            ⚡
+          </div>
+          <h2 style={{ fontSize: '1.8rem', color: '#0f172a', fontWeight: '800', marginBottom: '10px' }}>
+            Acceso Negocio
+          </h2>
+          <p style={{ color: '#64748b' }}>Gestión Interna Bobinados David</p>
+        </div>
 
+        {/* Formulario */}
         <form onSubmit={handleSubmit}>
-          <input 
-            type="email" 
-            placeholder="usuario@ejemplo.com" 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required 
-            style={inputStyle}
-          />
-          <input 
-            type="password" 
-            placeholder="Contraseña" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required 
-            style={inputStyle}
-          />
           
-          {error && <div style={{ color: '#ef4444', marginBottom: '15px', fontSize: '0.9rem' }}>{error}</div>}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#334155', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>
+              Correo Electrónico
+            </label>
+            <input 
+              type="email" 
+              placeholder="admin@bobinados.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+              style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '1rem' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '25px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <label style={{ color: '#334155', fontSize: '0.85rem', fontWeight: '600', textTransform: 'uppercase' }}>
+                Contraseña
+              </label>
+              <Link to="/forgot-password" style={{ color: '#0284c7', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '500' }}>
+                ¿Olvidaste tu clave?
+              </Link>
+            </div>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required 
+              style={{ width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '1rem' }}
+            />
+          </div>
+          
+          {error && (
+            <div style={{ 
+              background: '#fee2e2', color: '#b91c1c', padding: '12px', borderRadius: '8px', 
+              marginBottom: '20px', fontSize: '0.9rem', textAlign: 'center', border: '1px solid #fecaca' 
+            }}>
+              ⚠️ {error}
+            </div>
+          )}
 
           <button 
             type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%', padding: '12px', opacity: cargando ? 0.7 : 1 }}
-            disabled={cargando}
+            className="btn" 
+            style={{ 
+              width: '100%', 
+              background: '#0f172a', 
+              color: 'white', 
+              padding: '14px', 
+              borderRadius: '8px', 
+              fontSize: '1rem', 
+              fontWeight: '600',
+              opacity: isSubmitting ? 0.7 : 1,
+              transition: 'transform 0.2s',
+              cursor: 'pointer'
+            }}
+            onMouseOver={(e) => e.target.style.transform = 'scale(1.02)'}
+            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+            disabled={isSubmitting}
           >
-            {cargando ? 'Verificando...' : 'INGRESAR AL SISTEMA'}
+            {isSubmitting ? 'Verificando...' : 'INGRESAR'}
           </button>
         </form>
+
+        <div style={{ marginTop: '30px', textAlign: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '20px' }}>
+          <Link to="/" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+            ← Volver al sitio público
+          </Link>
+        </div>
+
       </div>
     </div>
   );

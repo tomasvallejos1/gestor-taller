@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard';
 import Motores from './pages/Motores';
 import MotorForm from './pages/MotorForm';
 import Ajustes from './pages/Ajustes';
+import ForgotPassword from './pages/ForgotPassword';
 
 
 function App() {
@@ -89,6 +90,7 @@ function App() {
           */}
           <Route path="/sistema" element={<Navigate to="/sistema/home" replace />} />
           <Route path="/sistema/ajustes" element={<ProtectedRoute> <Ajustes /> </ProtectedRoute>} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
         </Routes>
       </div>
     </div>

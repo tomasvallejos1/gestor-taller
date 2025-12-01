@@ -2,7 +2,8 @@ import express from 'express';
 import { 
   loginUser, 
   registerUser, 
-  forgotPassword, 
+  forgotPassword,
+  resetPassword,
   updateProfile, 
   getUsers,      
   deleteUser,
@@ -15,6 +16,7 @@ const router = express.Router();
 // Rutas Públicas
 router.post('/login', loginUser);
 router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Rutas Privadas (Cualquier usuario logueado)
 router.put('/profile', protect, updateProfile);
