@@ -22,6 +22,7 @@ app.get('/', (req, res) => {
     res.send('API Bobinados David funcionando 🚀');
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Servidor corriendo en el puerto ${PORT}`);
+    console.log(`Accesible en la red local en http://<tu-ip>:${PORT}`);
 });

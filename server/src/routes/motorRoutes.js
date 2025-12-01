@@ -5,21 +5,15 @@ import {
   getMotorById, 
   getMotors, 
   updateMotor 
-} from '../controllers/motorController.js';
+} from '../controllers/motorController.js'; // <--- Verifica que importe desde controllers
 
 const router = express.Router();
 
-// Definimos las rutas base
-// GET /api/motores -> Obtiene todos
-// POST /api/motores -> Crea uno nuevo
+// La ruta '/' equivale a '/api/motores' gracias al index.js
 router.route('/')
   .get(getMotors)
-  .post(createMotor);
+  .post(createMotor); // <--- Esto maneja el CREAR (POST)
 
-// Definimos las rutas que necesitan ID
-// GET /api/motores/:id -> Obtiene uno especifico
-// PUT /api/motores/:id -> Actualiza
-// DELETE /api/motores/:id -> Elimina
 router.route('/:id')
   .get(getMotorById)
   .put(updateMotor)

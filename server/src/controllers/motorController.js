@@ -1,19 +1,33 @@
 import Motor from '../models/Motor.js';
+import mongoose from 'mongoose';
 
-// 1. Obtener todos los motores
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
 export const getMotors = async (req, res) => {
   try {
-    const motores = await Motor.find().sort({ createdAt: -1 }); // Los más nuevos primero
+    // Ordenamos por nroOrden descendente (los nuevos primero)
+    const motores = await Motor.find().sort({ nroOrden: -1 }); 
     res.json(motores);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// 2. Obtener un motor por su ID (para ver la ficha completa)
 export const getMotorById = async (req, res) => {
+  const { id } = req.params;
   try {
-    const motor = await Motor.findById(req.params.id);
+    let motor;
+    
+    // INTELIGENCIA DE BÚSQUEDA:
+    // 1. Si es un número (ej: "1"), busca por nroOrden
+    if (!isNaN(id)) {
+      motor = await Motor.findOne({ nroOrden: id });
+    } 
+    // 2. Si es un hash largo y válido, busca por _id (mongo ID)
+    else if (isValidObjectId(id)) {
+      motor = await Motor.findById(id);
+    }
+
     if (!motor) return res.status(404).json({ message: 'Motor no encontrado' });
     res.json(motor);
   } catch (error) {
@@ -21,10 +35,8 @@ export const getMotorById = async (req, res) => {
   }
 };
 
-// 3. Crear un nuevo motor
 export const createMotor = async (req, res) => {
   try {
-    // req.body contiene todos los datos que enviaremos desde el formulario
     const nuevoMotor = new Motor(req.body);
     const motorGuardado = await nuevoMotor.save();
     res.status(201).json(motorGuardado);
@@ -33,14 +45,13 @@ export const createMotor = async (req, res) => {
   }
 };
 
-// 4. Actualizar un motor existente
 export const updateMotor = async (req, res) => {
+  const { id } = req.params;
   try {
-    const motorActualizado = await Motor.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true } // Esto devuelve el dato ya actualizado
-    );
+    // Misma lógica: si es número busca por orden, si no por ID
+    let query = !isNaN(id) ? { nroOrden: id } : { _id: id };
+    
+    const motorActualizado = await Motor.findOneAndUpdate(query, req.body, { new: true });
     if (!motorActualizado) return res.status(404).json({ message: 'Motor no encontrado' });
     res.json(motorActualizado);
   } catch (error) {
@@ -48,10 +59,12 @@ export const updateMotor = async (req, res) => {
   }
 };
 
-// 5. Eliminar un motor
 export const deleteMotor = async (req, res) => {
+  const { id } = req.params;
   try {
-    const motorEliminado = await Motor.findByIdAndDelete(req.params.id);
+    let query = !isNaN(id) ? { nroOrden: id } : { _id: id };
+    
+    const motorEliminado = await Motor.findOneAndDelete(query);
     if (!motorEliminado) return res.status(404).json({ message: 'Motor no encontrado' });
     res.json({ message: 'Motor eliminado correctamente' });
   } catch (error) {
