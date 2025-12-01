@@ -1,26 +1,34 @@
-import React, { useState } from 'react';
-import { Routes, Route, useLocation, Link } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { AuthContext } from './context/AuthContext'; // <--- 1. Importamos el Contexto
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Imports de páginas
 import Home from './pages/Home';
 import Status from './pages/Status';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Motores from './pages/Motores';
 import MotorForm from './pages/MotorForm';
-import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
+  const { user } = useContext(AuthContext); // <--- 2. Obtenemos el usuario actual
   const location = useLocation();
-  const isSystemRoute = location.pathname.startsWith('/sistema');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Detectamos si estamos en zona de sistema
+  const isSystemRoute = location.pathname.startsWith('/sistema');
 
   return (
     <div className="app-container">
       
-      {isSystemRoute ? (
+      {/* 3. LÓGICA DE VISUALIZACIÓN SEGURA:
+          Solo mostramos el Sidebar/Header si es ruta de sistema Y ADEMÁS el usuario existe.
+      */}
+      {isSystemRoute && user ? (
         <>
-          {/* HEADER MÓVIL (Controlado por CSS para que solo salga en celular) */}
           <div className="mobile-header">
             <Link 
               to="/sistema/home" 
@@ -31,10 +39,7 @@ function App() {
                 Bobinados David
               </h3>
             </Link>
-            <button 
-              className="hamburger-btn" 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
+            <button className="hamburger-btn" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
               ☰
             </button>
           </div>
@@ -42,19 +47,21 @@ function App() {
           <Sidebar isOpen={mobileMenuOpen} closeMenu={() => setMobileMenuOpen(false)} />
         </>
       ) : (
-        <Navbar />
+        // Si NO es ruta de sistema, mostramos Navbar pública.
+        // Si ES ruta de sistema pero NO hay usuario, no mostramos nada (el ProtectedRoute redirigirá)
+        !isSystemRoute && <Navbar />
       )}
 
-      {/* CONTENEDOR PRINCIPAL */}
-      {/* Si es ruta de sistema, usa la clase 'system-content', si no, 'public-content' */} 
-      <div className={isSystemRoute ? "system-content" : "public-content"}>
+      {/* Contenedor Principal */}
+      {/* Si es sistema Y hay usuario, aplicamos margen. Si no, ancho completo. */}
+      <div className={isSystemRoute && user ? "system-content" : "public-content"}>
         <Routes>
-          {/* PÚBLICAS */}
+          {/* Rutas Públicas */}
           <Route path="/" element={<Home />} />
           <Route path="/estado" element={<Status />} />
           <Route path="/login" element={<Login />} />
 
-          {/* PRIVADAS (Con Candado) */}
+          {/* Rutas Protegidas */}
           <Route path="/sistema/home" element={
             <ProtectedRoute> <Dashboard /> </ProtectedRoute>
           } />
@@ -74,6 +81,11 @@ function App() {
           <Route path="/sistema/motores/ver/:id" element={
             <ProtectedRoute> <MotorForm /> </ProtectedRoute>
           } />
+
+          {/* 4. REDIRECCIÓN DE SEGURIDAD PARA LA RAÍZ "/sistema"
+              Si alguien pone solo "/sistema", lo mandamos al home (o al login si no tiene permiso)
+          */}
+          <Route path="/sistema" element={<Navigate to="/sistema/home" replace />} />
 
         </Routes>
       </div>

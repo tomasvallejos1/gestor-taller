@@ -93,3 +93,58 @@ export const forgotPassword = async (req, res) => {
     res.status(500).json({ message: 'Error al enviar correo. Verifica credenciales.' });
   }
 };
+
+// 4. ACTUALIZAR PERFIL PROPIO
+export const updateProfile = async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    user.nombre = req.body.nombre || user.nombre;
+    user.email = req.body.email || user.email;
+    
+    if (req.body.password) {
+      // El modelo se encargará de encriptar si usas 'save' con un hook, 
+      // o debemos encriptar aquí. Como no pusimos hook de 'pre save' para password,
+      // lo hacemos manual aquí:
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      nombre: updatedUser.nombre,
+      email: updatedUser.email,
+      rol: updatedUser.rol,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404).json({ message: 'Usuario no encontrado' });
+  }
+};
+
+// 5. OBTENER TODOS LOS USUARIOS (Solo Admin)
+export const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({});
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 6. ELIMINAR USUARIO (Solo Admin)
+export const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (user) {
+      await user.deleteOne();
+      res.json({ message: 'Usuario eliminado' });
+    } else {
+      res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
