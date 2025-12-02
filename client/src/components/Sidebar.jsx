@@ -59,11 +59,21 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     <>
       <div className={`sidebar ${isOpen ? 'open' : ''}`} style={sidebarStyle}>
         
-        {/* LOGO */}
+        {/* LOGO CON RAYITO */}
         <div style={{ marginBottom: '30px', textAlign: 'center', borderBottom: '1px solid #1e293b', paddingBottom: '20px' }}>
           <Link to="/sistema/home" onClick={closeMenu} style={{ textDecoration: 'none' }}>
-            <h3 style={{ margin: 0, color: 'white', cursor: 'pointer', fontWeight: '700', fontSize: '1.3rem' }}>BOBINADOS DAVID</h3>
-            <small style={{ color: '#94a3b8', cursor: 'pointer', fontSize: '0.85rem' }}>Sistema de Gestión</small>
+            
+            {/* Contenedor Flex para alinear Rayo + Texto */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.5rem', color: '#38bdf8' }}>⚡</span>
+                <h3 style={{ margin: 0, color: 'white', cursor: 'pointer', fontWeight: '700', fontSize: '1.3rem' }}>
+                    BOBINADOS DAVID
+                </h3>
+            </div>
+            
+            <small style={{ color: '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', display: 'block', marginTop: '5px' }}>
+                Sistema de Gestión
+            </small>
           </Link>
         </div>
 
@@ -80,48 +90,28 @@ const Sidebar = ({ isOpen, closeMenu }) => {
         {/* ZONA INFERIOR */}
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '15px' }}>
            
-           {/* FILA DE UTILIDADES (Iconos lado a lado) */}
            <div style={{ display: 'flex', gap: '10px', marginBottom: '5px' }}>
-               
-               {/* Botón Tema */}
                <button 
                  onClick={toggleTheme} 
                  title={isDarkMode ? "Cambiar a Modo Claro" : "Cambiar a Modo Noche"}
-                 style={{
-                   ...linkStyle, 
-                   color: '#fbbf24', 
-                   textAlign: 'center', 
-                   flex: 1, // Ocupa 50%
-                   background: 'rgba(255,255,255,0.05)', // Un fondo sutil para que parezca botón
-                   marginBottom: 0
-                 }}
+                 style={{ ...linkStyle, color: '#fbbf24', textAlign: 'center', flex: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 0 }}
                >
                  {isDarkMode ? '☀️' : '🌙'}
                </button>
 
-               {/* Botón Pantalla Completa */}
                <button 
                  onClick={toggleFullScreen} 
                  title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
-                 style={{
-                   ...linkStyle, 
-                   color: '#38bdf8', 
-                   textAlign: 'center', 
-                   flex: 1, // Ocupa 50%
-                   background: 'rgba(255,255,255,0.05)',
-                   marginBottom: 0
-                 }}
+                 style={{ ...linkStyle, color: '#38bdf8', textAlign: 'center', flex: 1, background: 'rgba(255,255,255,0.05)', marginBottom: 0 }}
                >
                  {isFullscreen ? '🔽' : '📺'}
                </button>
            </div>
 
-           {/* AJUSTES DE CUENTA */}
            <Link to="/sistema/ajustes" style={{...linkStyle, color: '#94a3b8'}} onClick={closeMenu}>
              ⚙️ AJUSTES DE CUENTA
            </Link>
 
-           {/* CERRAR SESIÓN */}
            <button 
              style={{...linkStyle, color: '#ef4444', marginTop: '5px', fontWeight: '800'}} 
              onClick={handleLogout}
