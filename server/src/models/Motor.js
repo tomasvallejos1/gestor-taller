@@ -36,6 +36,7 @@ const motorSchema = mongoose.Schema({
     ancho: { type: String, default: '' },
     cantidad: { type: String, default: '' }
   },
+  fotos: [{ type: String }],
   observaciones: { type: String, default: '' }
 }, {
   timestamps: true 

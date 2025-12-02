@@ -5,18 +5,17 @@ import {
   getMotorById, 
   getMotors, 
   updateMotor 
-} from '../controllers/motorController.js'; // <--- Verifica que importe desde controllers
+} from '../controllers/motorController.js';
+import { protect, editor } from '../middlewares/authMiddleware.js';
+import { upload } from '../config/cloudinary.js'; // <--- IMPORTANTE
 
 const router = express.Router();
 
-// La ruta '/' equivale a '/api/motores' gracias al index.js
-router.route('/')
-  .get(getMotors)
-  .post(createMotor); // <--- Esto maneja el CREAR (POST)
+router.get('/', protect, getMotors);
+router.get('/:id', protect, getMotorById);
 
-router.route('/:id')
-  .get(getMotorById)
-  .put(updateMotor)
-  .delete(deleteMotor);
+router.post('/', protect, editor, upload.array('imagenes'), createMotor);
+router.put('/:id', protect, editor, upload.array('imagenes'), updateMotor); 
+router.delete('/:id', protect, editor, deleteMotor);
 
 export default router;

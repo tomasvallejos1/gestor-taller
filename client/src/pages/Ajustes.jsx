@@ -133,6 +133,21 @@ const Ajustes = () => {
     marginTop: '10px'
   };
 
+  const handleDownloadBackup = async () => {
+    try {
+      const response = await api.get('/backup/download', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `backup-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      alert("Error al descargar. Verifica permisos.");
+    }
+  };
+
   return (
     <div>
       <h2 style={{ fontSize: '1.75rem', color: '#0f172a', marginBottom: '30px' }}>Configuración del Sistema</h2>
@@ -262,6 +277,18 @@ const Ajustes = () => {
             </div>
           </div>
         )}
+
+        <div className="card" style={{ marginTop: '30px' }}>
+            <h3 style={{ fontSize: '1.2rem', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
+                💾 Copias de Seguridad
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '15px' }}>
+                Descarga una copia completa de la base de datos o configura el envío automático.
+            </p>
+            <button onClick={handleDownloadBackup} className="btn" style={{ background: '#059669', color: 'white', fontWeight: '600', border: 'none' }}>
+                DESCARGAR RESPALDO AHORA
+            </button>
+        </div>
 
       </div>
 

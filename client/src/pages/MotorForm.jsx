@@ -19,8 +19,14 @@ const MotorForm = () => {
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState(null);
 
+  // Estados fotos
   const [newImages, setNewImages] = useState([]);
   const [imageFiles, setImageFiles] = useState([]);
+  
+  // ESTADOS VISOR DE IMÁGENES (LIGHTBOX)
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [zoomOrigin, setZoomOrigin] = useState('center center');
 
   const safeStructure = {
     nroOrden: '', marca: '', modelo: '', hp: '', amperaje: '',
@@ -108,48 +114,40 @@ const MotorForm = () => {
     }
   };
 
+  // --- FUNCIÓN ZOOM INTELIGENTE ---
+  const handleImageClick = (e) => {
+    e.stopPropagation(); // Evitar que se cierre el modal
+    
+    if (isZoomed) {
+      // Si ya tiene zoom, lo quitamos (reset)
+      setIsZoomed(false);
+    } else {
+      // Si no tiene zoom, calculamos dónde hizo click
+      const { left, top, width, height } = e.target.getBoundingClientRect();
+      
+      // Obtenemos la posición relativa del click en porcentaje (0% a 100%)
+      const x = ((e.clientX - left) / width) * 100;
+      const y = ((e.clientY - top) / height) * 100;
+      
+      setZoomOrigin(`${x}% ${y}%`); // Fijamos el punto de origen del zoom
+      setIsZoomed(true); // Activamos el zoom
+    }
+  };
+
+  const closeLightbox = () => {
+    setSelectedImage(null);
+    setIsZoomed(false); // Reseteamos zoom al cerrar
+  };
+
   if (loading) return <div style={{padding:'40px', textAlign:'center'}}>Cargando...</div>;
   if (error) return <div style={{padding:'40px', textAlign:'center', color:'#ef4444'}}>{error}</div>;
 
   // --- ESTILOS VISUALES ---
-  const sectionHeader = { 
-    borderLeft: '4px solid #38bdf8', 
-    paddingLeft: '15px', 
-    marginBottom: '25px', 
-    marginTop: '10px', 
-    fontSize: '1.2rem', 
-    fontWeight: '800', 
-    letterSpacing: '-0.5px',
-    color: 'var(--text-main)' // Aseguramos que tome el color del tema
-  };
-
-  const labelStyle = { 
-    display: 'block', marginBottom: '8px', fontWeight: '700', fontSize: '0.7rem', 
-    textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.7 
-  };
-  
-  const inputStyle = { 
-    width: '100%', padding: '12px 15px', borderRadius: '8px', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '1rem',
-    transition: 'all 0.2s', 
-    border: isReadOnly ? '1px solid transparent' : '1px solid #cbd5e1', 
-    background: isReadOnly ? 'rgba(100,100,100,0.05)' : '#ffffff', 
-    color: 'inherit', 
-    fontWeight: isReadOnly ? '600' : '400', 
-    cursor: isReadOnly ? 'default' : 'text', 
-    pointerEvents: isReadOnly ? 'none' : 'auto' 
-  };
-
-  const subCardStyle = { 
-    padding: '25px', borderRadius: '12px', border:'1px solid rgba(150,150,150,0.2)',
-    background: 'rgba(56, 189, 248, 0.03)' 
-  };
-
-  const cardTitleStyle = { 
-    fontSize: '0.9rem', textTransform: 'uppercase', marginTop: 0, fontWeight: '900', 
-    borderBottom: '2px solid rgba(56, 189, 248, 0.2)', paddingBottom: '15px', 
-    textAlign: 'center', letterSpacing: '1px', marginBottom: '20px', color: '#38bdf8' 
-  };
-
+  const sectionHeader = { borderLeft: '4px solid #38bdf8', paddingLeft: '15px', marginBottom: '25px', marginTop: '10px', fontSize: '1.2rem', fontWeight: '800', letterSpacing: '-0.5px', color: 'var(--text-main)' };
+  const labelStyle = { display: 'block', marginBottom: '8px', fontWeight: '700', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.7 };
+  const inputStyle = { width: '100%', padding: '12px 15px', borderRadius: '8px', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '1rem', transition: 'all 0.2s', border: isReadOnly ? '1px solid transparent' : '1px solid #cbd5e1', background: isReadOnly ? 'rgba(100,100,100,0.05)' : '#ffffff', color: 'inherit', fontWeight: isReadOnly ? '600' : '400', cursor: isReadOnly ? 'default' : 'text', pointerEvents: isReadOnly ? 'none' : 'auto' };
+  const subCardStyle = { padding: '25px', borderRadius: '12px', border:'1px solid rgba(150,150,150,0.2)', background: 'rgba(56, 189, 248, 0.03)' };
+  const cardTitleStyle = { fontSize: '0.9rem', textTransform: 'uppercase', marginTop: 0, fontWeight: '900', borderBottom: '2px solid rgba(56, 189, 248, 0.2)', paddingBottom: '15px', textAlign: 'center', letterSpacing: '1px', marginBottom: '20px', color: '#38bdf8' };
   const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '30px' };
 
   return (
@@ -197,7 +195,6 @@ const MotorForm = () => {
         {/* SECCIÓN 2 */}
         <h3 style={sectionHeader}>Datos de Bobinado</h3>
         <div className="grid-responsive-2" style={{ marginBottom: '40px' }}>
-          
           <div style={subCardStyle}>
             <h4 style={cardTitleStyle}>ARRANQUE</h4>
             <div style={{display:'grid', gap:'15px'}}>
@@ -207,7 +204,6 @@ const MotorForm = () => {
               <div><label style={labelStyle}>Abertura</label><input readOnly={isReadOnly} name="arranque.abertura" value={formData.arranque?.abertura || ''} onChange={handleChange} style={{...inputStyle, background: 'var(--bg-app)'}} /></div>
             </div>
           </div>
-
           <div style={subCardStyle}>
             <h4 style={cardTitleStyle}>TRABAJO</h4>
             <div style={{display:'grid', gap:'15px'}}>
@@ -227,19 +223,34 @@ const MotorForm = () => {
            <div><label style={labelStyle}>Cantidad</label><input readOnly={isReadOnly} name="aislaciones.cantidad" value={formData.aislaciones?.cantidad || ''} onChange={handleChange} style={inputStyle} /></div>
         </div>
 
-        {/* SECCIÓN 4 */}
+        {/* SECCIÓN 4 - FOTOS */}
         <h3 style={sectionHeader}>Registro Fotográfico</h3>
         <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '30px' }}>
+            
+            {/* Fotos DB */}
             {formData.fotos?.map((fotoUrl, index) => (
-                <div key={index} style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.2)' }}>
-                    <img src={fotoUrl} alt="Motor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div key={index} style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.2)', cursor: 'zoom-in' }}>
+                    <img 
+                      src={fotoUrl} 
+                      alt="Motor" 
+                      onClick={(e) => { setSelectedImage(fotoUrl); setIsZoomed(false); }} // Al abrir, empieza sin zoom
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                    />
                 </div>
             ))}
+
+            {/* Nuevas Fotos */}
             {newImages.map((url, index) => (
-                <div key={`new-${index}`} style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #38bdf8' }}>
-                    <img src={url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+                <div key={`new-${index}`} style={{ width: '120px', height: '120px', borderRadius: '12px', overflow: 'hidden', border: '2px solid #38bdf8', cursor: 'zoom-in' }}>
+                    <img 
+                      src={url} 
+                      alt="Preview" 
+                      onClick={(e) => { setSelectedImage(url); setIsZoomed(false); }} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} 
+                    />
                 </div>
             ))}
+
             {!isReadOnly && (
                 <label style={{ width: '120px', height: '120px', borderRadius: '12px', border: '2px dashed var(--text-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.7, background: 'rgba(0,0,0,0.05)' }}>
                     <span style={{ fontSize: '2rem' }}>+</span>
@@ -269,6 +280,7 @@ const MotorForm = () => {
 
       </form>
 
+      {/* MODAL DE CONFIRMACIÓN */}
       <Modal 
         isOpen={modalOpen}
         title={isEditMode ? "Confirmar Edición" : "Confirmar Creación"}
@@ -276,6 +288,51 @@ const MotorForm = () => {
         onClose={() => setModalOpen(false)}
         onConfirm={confirmSave}
       />
+
+      {/* --- VISOR DE IMÁGENES (LIGHTBOX MEJORADO) --- */}
+      {selectedImage && (
+        <div 
+          onClick={closeLightbox} // Cerrar al tocar fondo
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.95)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, backdropFilter: 'blur(5px)',
+            cursor: 'zoom-out' // Cursor por defecto del fondo
+          }}
+        >
+          <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button 
+              onClick={closeLightbox}
+              style={{
+                position: 'absolute', top: '20px', right: '20px', 
+                background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', 
+                fontSize: '2rem', cursor: 'pointer', zIndex: 10001,
+                width: '50px', height: '50px', borderRadius: '50%'
+              }}
+            >
+              ✕
+            </button>
+            
+            <img 
+              src={selectedImage} 
+              alt="Full Size" 
+              onClick={handleImageClick} // ZOOM AL TOCAR IMAGEN
+              style={{ 
+                maxWidth: '95%', 
+                maxHeight: '90vh', 
+                borderRadius: '4px', 
+                boxShadow: '0 0 30px rgba(0,0,0,0.8)',
+                transition: 'transform 0.25s ease', // Animación suave
+                transform: isZoomed ? 'scale(2.5)' : 'scale(1)',
+                transformOrigin: zoomOrigin, // Hacia donde hace el zoom
+                cursor: isZoomed ? 'zoom-out' : 'zoom-in'
+              }} 
+            />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
