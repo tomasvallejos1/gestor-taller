@@ -29,121 +29,39 @@ body {
    DISEÑO BASE (ESCRITORIO / PC)
    ========================================= */
 
-/* 1. Header Móvil: OCULTO EN PC */
-.mobile-header {
-  display: none; 
+/* Utilidades Texto */
+h1, h2, h3, h4 { color: var(--primary); margin: 0; font-weight: 700; letter-spacing: -0.5px; }
+a { text-decoration: none; }
+
+/* Botones Modernos */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
 }
 
-/* 2. Sidebar: SIEMPRE VISIBLE EN PC */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 100vh;
-  width: var(--sidebar-width);
+.btn-primary {
   background-color: var(--primary);
   color: white;
-  z-index: 100;
-  transition: transform 0.3s ease;
-  /* En PC no se mueve */
-  transform: translateX(0); 
 }
+.btn-primary:hover { background-color: var(--primary-light); transform: translateY(-1px); }
 
-/* 3. Contenido del Sistema (Derecha) */
-.system-content {
-  margin-left: var(--sidebar-width); /* Deja espacio para el menú */
-  width: calc(100% - var(--sidebar-width)); /* Ocupa el resto */
-  padding: 30px;
-  min-height: 100vh;
-  background-color: var(--bg-app);
-  box-sizing: border-box;
-}
-
-/* 4. Contenido Público (Sin menú lateral) */
-.public-content {
-  margin-left: 0;
-  width: 100%;
-  padding: 0;
-}
-
-/* Botón Hamburguesa */
-.hamburger-btn {
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.8rem;
-  cursor: pointer;
-  padding: 0 10px;
-}
-
-/* =========================================
-   DISEÑO RESPONSIVE (CELULAR / TABLET)
-   ========================================= */
-@media (max-width: 768px) {
-
-  /* 1. Header Móvil: APARECE */
-  .mobile-header {
-    display: flex; /* Se muestra la barra azul */
-    background: var(--primary);
-    color: white;
-    padding: 15px 20px;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-
-  /* 2. Sidebar: OCULTO POR DEFECTO */
-  .sidebar {
-    transform: translateX(-100%); /* Se esconde a la izquierda */
-    z-index: 2000; /* Por encima de todo */
-    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-  }
-
-  /* Clase para abrir el sidebar con JS */
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  /* 3. Contenido: Ocupa todo el ancho */
-  .system-content {
-    margin-left: 0;
-    width: 100%;
-    padding: 15px;
-  }
-
-  /* Overlay oscuro */
-  .overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 1500;
-    display: none;
-  }
-  .overlay.show { display: block; }
-
-  /* Ajustes de Tablas y Grillas */
-  .grid-responsive, .grid-responsive-2 {
-    grid-template-columns: 1fr !important;
-    gap: 30px; /* Aumentado a 30px para evitar superposición de tarjetas */
-  }
-  
-  .btn { width: 100%; margin-bottom: 10px; }
-}
-
-/* =========================================
-   ESTILOS GENERALES COMPONENTES
-   ========================================= */
-.card {
-  background: var(--surface);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+.btn-secondary {
+  background-color: white;
+  color: var(--text-main);
   border: 1px solid var(--border);
-  padding: 24px;
 }
+.btn-secondary:hover { background-color: #f8fafc; color: var(--primary); }
 
+/* Inputs Profesionales */
 input, select, textarea {
   width: 100%;
   padding: 10px 12px;
@@ -152,6 +70,28 @@ input, select, textarea {
   background: #ffffff;
   color: var(--text-main);
   box-sizing: border-box;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1);
+  background: white;
+}
+
+input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
+  background-color: #ffffff;
+  color: var(--primary);
+  border-color: #f1f5f9;
+}
+
+/* Tarjetas (Cards) */
+.card {
+  background: var(--surface);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  padding: 24px;
 }
 
 /* Grillas de escritorio */
@@ -173,13 +113,54 @@ input, select, textarea {
   overflow-x: auto;
 }
 
-/* Utilidades Texto */
-h1, h2, h3 { color: var(--primary); margin: 0; font-weight: 700; letter-spacing: -0.5px; }
-a { text-decoration: none; }
+/* 1. Header Móvil: OCULTO EN PC POR DEFECTO */
+.mobile-header {
+  display: none; 
+}
+
+/* 2. Sidebar: SIEMPRE VISIBLE EN PC */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background-color: var(--primary);
+  color: white;
+  z-index: 100;
+  transition: transform 0.3s ease;
+  transform: translateX(0); /* En PC no se mueve */
+}
+
+/* 3. Contenido del Sistema (Derecha) */
+.system-content {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  padding: 30px;
+  min-height: 100vh;
+  background-color: var(--bg-app);
+  box-sizing: border-box;
+}
+
+/* 4. Contenido Público */
+.public-content {
+  margin-left: 0;
+  width: 100%;
+  padding: 0;
+}
+
+/* Botón Hamburguesa */
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0 10px;
+}
 
 /* --- ANIMACIONES Y ESTILOS LANDING --- */
 
-/* Animación de entrada suave */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
@@ -189,13 +170,12 @@ a { text-decoration: none; }
   animation: fadeIn 0.8s ease-out forwards;
 }
 
-/* Gradientes y Fondos */
 .bg-hero {
   background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.7)), 
               url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
   background-size: cover;
   background-position: center;
-  background-attachment: fixed; /* Efecto Parallax */
+  background-attachment: fixed;
 }
 
 .text-gradient {
@@ -204,7 +184,6 @@ a { text-decoration: none; }
   -webkit-text-fill-color: transparent;
 }
 
-/* Tarjetas de Servicios */
 .service-card {
   background: white;
   padding: 30px;
@@ -234,11 +213,10 @@ a { text-decoration: none; }
   color: var(--accent);
 }
 
-
-/* --- NUEVA BARRA DE NAVEGACIÓN (RESPONSIVE) --- */
+/* --- BARRA DE NAVEGACIÓN PÚBLICA --- */
 
 .navbar {
-  background-color: var(--primary); /* Azul oscuro */
+  background-color: var(--primary);
   color: white;
   height: 70px;
   display: flex;
@@ -260,7 +238,6 @@ a { text-decoration: none; }
   align-items: center;
 }
 
-/* LOGO DISEÑADO CON CSS */
 .nav-logo {
   display: flex;
   align-items: center;
@@ -285,7 +262,6 @@ a { text-decoration: none; }
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
 
-/* ENLACES (Versión Escritorio) */
 .nav-menu {
   display: flex;
   gap: 30px;
@@ -296,7 +272,7 @@ a { text-decoration: none; }
 }
 
 .nav-link {
-  color: #cbd5e1; /* Gris claro */
+  color: #cbd5e1;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
@@ -304,13 +280,12 @@ a { text-decoration: none; }
 }
 
 .nav-link:hover {
-  color: var(--accent); /* Azul eléctrico al pasar mouse */
+  color: var(--accent);
 }
 
-/* Botón de Acceso (Login) */
 .btn-login {
   background: rgba(255, 255, 255, 0.1);
-  padding: 8px 25px; /* Un poco más ancho */
+  padding: 8px 25px;
   border-radius: 50px;
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -320,13 +295,12 @@ a { text-decoration: none; }
 }
 
 .btn-login:hover {
-  background: var(--accent); /* Azul eléctrico de fondo */
+  background: var(--accent);
   border-color: var(--accent);
-  color: #000000 !important; /* <--- TEXTO NEGRO AL PASAR MOUSE */
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.6); /* Un brillo extra */
+  color: #000000 !important;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
 
-/* HAMBURGUESA (Oculta en PC) */
 .menu-icon {
   display: none;
   font-size: 1.8rem;
@@ -334,23 +308,78 @@ a { text-decoration: none; }
   color: white;
 }
 
-/* --- VERSIÓN MÓVIL (Celulares) --- */
-@media (max-width: 768px) {
+/* =========================================
+   DISEÑO RESPONSIVE (CELULAR / TABLET / TABLET HORIZONTAL)
+   ========================================= */
+@media (max-width: 1024px) {
+
+  /* 1. Header Móvil: APARECE */
+  .mobile-header {
+    display: flex; /* Se muestra la barra azul */
+    background: var(--primary);
+    color: white;
+    padding: 15px 20px;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
+  /* 2. Sidebar: OCULTO POR DEFECTO */
+  .sidebar {
+    transform: translateX(-100%); /* Se esconde a la izquierda */
+    z-index: 2000; /* Por encima de todo */
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
+    width: 280px !important;
+  }
+
+  /* Clase para abrir el sidebar con JS */
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* 3. Contenido: Ocupa todo el ancho */
+  .system-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 15px !important;
+  }
+
+  /* Overlay oscuro */
+  .overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1500;
+    display: none;
+  }
+  .overlay.show { display: block; }
+
+  /* Ajustes de Tablas y Grillas */
+  .grid-responsive, .grid-responsive-2 {
+    grid-template-columns: 1fr !important;
+    gap: 30px; 
+  }
   
-  /* Mostrar botón hamburguesa */
+  .btn { width: 100%; margin-bottom: 10px; }
+  
+  .hide-mobile { display: none; }
+
+  /* Ajustes Navbar Pública Móvil */
   .menu-icon {
     display: block;
   }
 
-  /* El menú se convierte en un panel desplegable */
   .nav-menu {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: auto; /* Se ajusta al contenido */
+    height: auto;
     position: absolute;
-    top: 70px; /* Justo debajo de la barra */
-    left: -100%; /* Oculto a la izquierda */
+    top: 70px;
+    left: -100%;
     background: var(--primary);
     transition: all 0.3s ease;
     padding: 20px 0;
@@ -359,7 +388,6 @@ a { text-decoration: none; }
     gap: 0;
   }
 
-  /* Clase activa para mostrar el menú */
   .nav-menu.active {
     left: 0; 
   }
@@ -381,7 +409,6 @@ a { text-decoration: none; }
     background: rgba(255,255,255,0.05);
   }
 
-  /* Botón de login en móvil */
   .btn-login {
     display: inline-block;
     width: 80%;
