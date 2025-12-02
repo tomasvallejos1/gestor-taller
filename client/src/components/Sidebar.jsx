@@ -1,9 +1,10 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 const Sidebar = ({ isOpen, closeMenu }) => {
   const { logout } = useContext(AuthContext);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const sidebarStyle = {
     height: '100vh',
@@ -28,7 +29,12 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     fontSize: '0.9rem',
     fontWeight: '500',
     transition: 'background 0.2s',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    background: 'transparent',
+    border: 'none',
+    width: '100%',
+    textAlign: 'left',
+    fontFamily: 'inherit'
   };
 
   const handleLogout = (e) => {
@@ -37,9 +43,25 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     logout();
   };
 
+  // --- FUNCIÓN PANTALLA COMPLETA ---
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        console.log(`Error al intentar pantalla completa: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    }
+    closeMenu(); // Cerramos el menú en móvil para ver el resultado
+  };
+
   return (
     <>
-      {/* El Sidebar en sí */}
       <div className={`sidebar ${isOpen ? 'open' : ''}`} style={sidebarStyle}>
         
         {/* LOGO */}
@@ -50,7 +72,7 @@ const Sidebar = ({ isOpen, closeMenu }) => {
           </Link>
         </div>
 
-        {/* NAVEGACIÓN PRINCIPAL */}
+        {/* NAVEGACIÓN */}
         <nav style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <Link to="/sistema/home" style={linkStyle} onClick={closeMenu}>INICIO</Link>
           <Link to="/sistema/reparaciones" style={linkStyle} onClick={closeMenu}>REPARACIONES</Link>
@@ -60,31 +82,34 @@ const Sidebar = ({ isOpen, closeMenu }) => {
           <Link to="/sistema/informes" style={linkStyle} onClick={closeMenu}>INFORMES</Link>
         </nav>
         
-        {/* ZONA INFERIOR: AJUSTES Y SALIDA */}
+        {/* ZONA INFERIOR */}
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '15px' }}>
            
-           {/* AJUSTES DE CUENTA */}
+           {/* BOTÓN PANTALLA COMPLETA */}
+           <button onClick={toggleFullScreen} style={{...linkStyle, color: '#38bdf8'}}>
+             {isFullscreen ? '🔽 SALIR PANTALLA COMPLETA' : '📺 PANTALLA COMPLETA'}
+           </button>
+
+           {/* AJUSTES */}
            <Link to="/sistema/ajustes" style={{...linkStyle, color: '#94a3b8'}} onClick={closeMenu}>
              ⚙️ AJUSTES DE CUENTA
            </Link>
 
-           {/* CERRAR SESIÓN (Sin emoji y Bold fuerte) */}
-           <a 
-             href="#" 
+           {/* SALIR */}
+           <button 
              style={{
                ...linkStyle, 
                color: '#ef4444', 
                marginTop: '5px',
-               fontWeight: '800' // <--- Bien negrita
+               fontWeight: '800'
              }} 
              onClick={handleLogout}
            >
              CERRAR SESIÓN
-           </a>
+           </button>
         </div>
       </div>
 
-      {/* Overlay para móvil */}
       <div className={`overlay ${isOpen ? 'show' : ''}`} onClick={closeMenu}></div>
     </>
   );
