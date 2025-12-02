@@ -1,14 +1,16 @@
 import React, { useContext, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const Sidebar = ({ isOpen, closeMenu }) => {
   const { logout } = useContext(AuthContext);
+  const { isDarkMode, toggleTheme } = useTheme();
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const sidebarStyle = {
     height: '100vh',
-    background: '#0f172a',
+    background: isDarkMode ? '#020617' : '#0f172a',
     color: 'white',
     display: 'flex',
     flexDirection: 'column',
@@ -17,6 +19,7 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     position: 'fixed',
     top: 0,
     left: 0,
+    borderRight: isDarkMode ? '1px solid #1e293b' : 'none'
   };
 
   const linkStyle = {
@@ -43,21 +46,13 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     logout();
   };
 
-  // --- FUNCIÓN PANTALLA COMPLETA ---
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch((err) => {
-        console.log(`Error al intentar pantalla completa: ${err.message}`);
-      });
+      document.documentElement.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullscreen(false);
-      }
+      if (document.exitFullscreen) { document.exitFullscreen(); setIsFullscreen(false); }
     }
-    closeMenu(); // Cerramos el menú en móvil para ver el resultado
+    closeMenu();
   };
 
   return (
@@ -85,24 +80,50 @@ const Sidebar = ({ isOpen, closeMenu }) => {
         {/* ZONA INFERIOR */}
         <div style={{ borderTop: '1px solid #1e293b', paddingTop: '15px' }}>
            
-           {/* BOTÓN PANTALLA COMPLETA */}
-           <button onClick={toggleFullScreen} style={{...linkStyle, color: '#38bdf8'}}>
-             {isFullscreen ? '🔽 SALIR PANTALLA COMPLETA' : '📺 PANTALLA COMPLETA'}
-           </button>
+           {/* FILA DE UTILIDADES (Iconos lado a lado) */}
+           <div style={{ display: 'flex', gap: '10px', marginBottom: '5px' }}>
+               
+               {/* Botón Tema */}
+               <button 
+                 onClick={toggleTheme} 
+                 title={isDarkMode ? "Cambiar a Modo Claro" : "Cambiar a Modo Noche"}
+                 style={{
+                   ...linkStyle, 
+                   color: '#fbbf24', 
+                   textAlign: 'center', 
+                   flex: 1, // Ocupa 50%
+                   background: 'rgba(255,255,255,0.05)', // Un fondo sutil para que parezca botón
+                   marginBottom: 0
+                 }}
+               >
+                 {isDarkMode ? '☀️' : '🌙'}
+               </button>
 
-           {/* AJUSTES */}
+               {/* Botón Pantalla Completa */}
+               <button 
+                 onClick={toggleFullScreen} 
+                 title={isFullscreen ? "Salir de Pantalla Completa" : "Pantalla Completa"}
+                 style={{
+                   ...linkStyle, 
+                   color: '#38bdf8', 
+                   textAlign: 'center', 
+                   flex: 1, // Ocupa 50%
+                   background: 'rgba(255,255,255,0.05)',
+                   marginBottom: 0
+                 }}
+               >
+                 {isFullscreen ? '🔽' : '📺'}
+               </button>
+           </div>
+
+           {/* AJUSTES DE CUENTA */}
            <Link to="/sistema/ajustes" style={{...linkStyle, color: '#94a3b8'}} onClick={closeMenu}>
              ⚙️ AJUSTES DE CUENTA
            </Link>
 
-           {/* SALIR */}
+           {/* CERRAR SESIÓN */}
            <button 
-             style={{
-               ...linkStyle, 
-               color: '#ef4444', 
-               marginTop: '5px',
-               fontWeight: '800'
-             }} 
+             style={{...linkStyle, color: '#ef4444', marginTop: '5px', fontWeight: '800'}} 
              onClick={handleLogout}
            >
              CERRAR SESIÓN

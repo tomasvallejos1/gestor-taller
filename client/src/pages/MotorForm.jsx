@@ -13,13 +13,15 @@ const MotorForm = () => {
   const canEdit = user?.rol === 'super' || user?.rol === 'editor';
   const isViewMode = location.pathname.includes('/ver/');
   const isEditMode = id && !isViewMode;
-
-  // Si es modo ver O si el usuario NO tiene permisos, activamos modo solo lectura
   const isReadOnly = isViewMode || !canEdit;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(!!id);
   const [error, setError] = useState(null);
+
+  // Estados fotos
+  const [newImages, setNewImages] = useState([]);
+  const [imageFiles, setImageFiles] = useState([]);
 
   const safeStructure = {
     nroOrden: '', marca: '', modelo: '', hp: '', amperaje: '',
@@ -28,7 +30,8 @@ const MotorForm = () => {
     observaciones: '', 
     arranque: { alambre: '', paso: '', vueltas: '', abertura: '' },
     trabajo: { alambre: '', paso: '', vueltas: '', abertura: '' },
-    aislaciones: { alta: '', ancho: '', cantidad: '' }
+    aislaciones: { alta: '', ancho: '', cantidad: '' },
+    fotos: []
   };
 
   const [formData, setFormData] = useState(safeStructure);
@@ -70,6 +73,15 @@ const MotorForm = () => {
     }
   };
 
+  const handleImageChange = (e) => {
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files);
+      setImageFiles(prev => [...prev, ...filesArray]);
+      const filesURL = filesArray.map(file => URL.createObjectURL(file));
+      setNewImages(prev => [...prev, ...filesURL]);
+    }
+  };
+
   const handleSaveClick = (e) => {
     e.preventDefault();
     if (!formData.marca?.trim() || !formData.hp?.trim()) {
@@ -81,8 +93,14 @@ const MotorForm = () => {
 
   const confirmSave = async () => {
     try {
-      if (isEditMode) await api.put(`/motores/${id}`, formData);
-      else await api.post('/motores', formData);
+      const formDataToSend = new FormData();
+      formDataToSend.append('data', JSON.stringify(formData));
+      imageFiles.forEach(file => { formDataToSend.append('imagenes', file); });
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
+
+      if (isEditMode) await api.put(`/motores/${id}`, formDataToSend, config);
+      else await api.post('/motores', formDataToSend, config);
+      
       setModalOpen(false);
       navigate('/sistema/motores');
     } catch (err) {
@@ -91,39 +109,44 @@ const MotorForm = () => {
     }
   };
 
-  if (loading) return <div style={{padding:'40px', textAlign:'center', color:'#64748b'}}>Cargando...</div>;
-  if (error) return <div style={{padding:'40px', textAlign:'center', color:'#ef4444'}}>{error}</div>;
+  if (loading) return <div style={{padding:'40px', textAlign:'center'}}>Cargando...</div>;
+  if (error) return <div style={{padding:'40px', textAlign:'center', color:'red'}}>{error}</div>;
 
-  // --- ESTILOS ---
-  const sectionHeader = { borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', marginBottom: '20px', marginTop: '10px', color: '#0f172a', fontSize: '1.1rem', fontWeight: '700', letterSpacing: '-0.5px' };
-  const labelStyle = { display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.75rem', color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' };
-  const inputStyle = { width: '100%', padding: '12px', borderRadius: '6px', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.95rem', transition: 'all 0.2s', border: isReadOnly ? '1px solid #f1f5f9' : '1px solid #cbd5e1', background: '#ffffff', color: isReadOnly ? '#1e293b' : '#0f172a', fontWeight: isReadOnly ? '500' : '400', cursor: isReadOnly ? 'default' : 'text', pointerEvents: isReadOnly ? 'none' : 'auto' };
-  const cardTitleStyle = { fontSize: '0.85rem', color: '#334155', textTransform: 'uppercase', marginTop: 0, fontWeight: '800', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', textAlign: 'center', letterSpacing: '1px' };
+  // --- ESTILOS VISUALES ---
+  const sectionHeader = { borderBottom: '2px solid currentColor', paddingBottom: '8px', marginBottom: '20px', marginTop: '10px', fontSize: '1.1rem', fontWeight: '700', letterSpacing: '-0.5px', opacity: 0.9 };
+  const labelStyle = { display: 'block', marginBottom: '6px', fontWeight: '600', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.5px', opacity: 0.8 };
+  
+  // Input sin fondo fijo (deja que el CSS global decida)
+  const inputStyle = { 
+    width: '100%', padding: '12px', borderRadius: '6px', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.95rem',
+    transition: 'all 0.2s', fontWeight: isReadOnly ? '500' : '400', cursor: isReadOnly ? 'default' : 'text', 
+    pointerEvents: isReadOnly ? 'none' : 'auto' 
+  };
+
+  const cardTitleStyle = { fontSize: '0.85rem', textTransform: 'uppercase', marginTop: 0, fontWeight: '800', borderBottom: '1px solid', paddingBottom: '10px', textAlign: 'center', letterSpacing: '1px', borderColor: 'rgba(150,150,150,0.2)' };
   const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' };
-  const cardStyle = { background: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 20px -5px rgba(0, 0, 0, 0.05)' };
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '60px' }}>
       
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <div>
-          <h2 style={{ fontSize: '1.8rem', color: '#0f172a', margin: 0, fontWeight: '800' }}>
-            {formData.nroOrden ? `FICHA TÉCNICA #${formData.nroOrden}` : (isEditMode ? 'EDITAR FICHA' : 'NUEVA FICHA')}
+          <h2 style={{ fontSize: '1.8rem', margin: 0, fontWeight: '800' }}>
+            {formData.nroOrden ? `FICHA #${formData.nroOrden}` : (isEditMode ? 'EDITAR FICHA' : 'NUEVA FICHA')}
           </h2>
-          <span style={{ fontSize: '0.9rem', color: '#64748b' }}>{formData.marca} {formData.modelo}</span>
+          <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>{formData.marca} {formData.modelo}</span>
         </div>
-        <Link to="/sistema/motores" className="btn btn-secondary" style={{textDecoration:'none', color:'#0f172a', border:'1px solid #cbd5e1', padding:'8px 16px', borderRadius:'6px', background:'white'}}>
-          Volver
-        </Link>
+        <Link to="/sistema/motores" className="btn btn-secondary">Volver</Link>
       </div>
 
-      <form onSubmit={handleSaveClick} style={cardStyle}>
+      {/* CAMBIO AQUÍ: className="card" y borramos background:'white' */}
+      <form onSubmit={handleSaveClick} className="card" style={{ padding: '40px' }}>
         
         <h3 style={sectionHeader}>1. Identificación del Equipo</h3>
         <div style={grid3}>
           <div><label style={labelStyle}>Marca *</label><input required readOnly={isReadOnly} name="marca" value={formData.marca || ''} onChange={handleChange} style={inputStyle} /></div>
           <div><label style={labelStyle}>Modelo</label><input readOnly={isReadOnly} name="modelo" value={formData.modelo || ''} onChange={handleChange} style={inputStyle} /></div>
-          <div><label style={labelStyle}>Potencia (HP) *</label><input required readOnly={isReadOnly} name="hp" value={formData.hp || ''} onChange={handleChange} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Potencia *</label><input required readOnly={isReadOnly} name="hp" value={formData.hp || ''} onChange={handleChange} style={inputStyle} /></div>
           <div><label style={labelStyle}>Amperaje</label><input readOnly={isReadOnly} name="amperaje" value={formData.amperaje || ''} onChange={handleChange} style={inputStyle} /></div>
           <div><label style={labelStyle}>Capacitor</label><input readOnly={isReadOnly} name="capacitor" value={formData.capacitor || ''} onChange={handleChange} style={inputStyle} /></div>
           <div><label style={labelStyle}>Tipo</label><input readOnly={isReadOnly} name="tipo" value={formData.tipo || ''} onChange={handleChange} style={inputStyle} /></div>
@@ -136,54 +159,71 @@ const MotorForm = () => {
         </div>
 
         <h3 style={sectionHeader}>2. Datos de Bobinado</h3>
-        
-        {/* CORRECCIÓN VISUAL: grid-responsive-2 para mitad y mitad */}
         <div className="grid-responsive-2" style={{ marginBottom: '40px' }}>
           
-          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border:'1px solid #e2e8f0' }}>
+          <div style={{ padding: '20px', borderRadius: '8px', border:'1px solid rgba(150,150,150,0.2)' }}>
             <h4 style={cardTitleStyle}>Arranque</h4>
             <div style={{display:'grid', gap:'15px'}}>
-              <div><label style={labelStyle}>Alambre</label><input readOnly={isReadOnly} name="arranque.alambre" value={formData.arranque?.alambre || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Paso</label><input readOnly={isReadOnly} name="arranque.paso" value={formData.arranque?.paso || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Vueltas</label><input readOnly={isReadOnly} name="arranque.vueltas" value={formData.arranque?.vueltas || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Abertura</label><input readOnly={isReadOnly} name="arranque.abertura" value={formData.arranque?.abertura || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
+              <div><label style={labelStyle}>Alambre</label><input readOnly={isReadOnly} name="arranque.alambre" value={formData.arranque?.alambre || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Paso</label><input readOnly={isReadOnly} name="arranque.paso" value={formData.arranque?.paso || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Vueltas</label><input readOnly={isReadOnly} name="arranque.vueltas" value={formData.arranque?.vueltas || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Abertura</label><input readOnly={isReadOnly} name="arranque.abertura" value={formData.arranque?.abertura || ''} onChange={handleChange} style={inputStyle} /></div>
             </div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', border:'1px solid #e2e8f0' }}>
+          <div style={{ padding: '20px', borderRadius: '8px', border:'1px solid rgba(150,150,150,0.2)' }}>
             <h4 style={cardTitleStyle}>Trabajo</h4>
             <div style={{display:'grid', gap:'15px'}}>
-              <div><label style={labelStyle}>Alambre</label><input readOnly={isReadOnly} name="trabajo.alambre" value={formData.trabajo?.alambre || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Paso</label><input readOnly={isReadOnly} name="trabajo.paso" value={formData.trabajo?.paso || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Vueltas</label><input readOnly={isReadOnly} name="trabajo.vueltas" value={formData.trabajo?.vueltas || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
-              <div><label style={labelStyle}>Abertura</label><input readOnly={isReadOnly} name="trabajo.abertura" value={formData.trabajo?.abertura || ''} onChange={handleChange} style={{...inputStyle, background:'white'}} /></div>
+              <div><label style={labelStyle}>Alambre</label><input readOnly={isReadOnly} name="trabajo.alambre" value={formData.trabajo?.alambre || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Paso</label><input readOnly={isReadOnly} name="trabajo.paso" value={formData.trabajo?.paso || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Vueltas</label><input readOnly={isReadOnly} name="trabajo.vueltas" value={formData.trabajo?.vueltas || ''} onChange={handleChange} style={inputStyle} /></div>
+              <div><label style={labelStyle}>Abertura</label><input readOnly={isReadOnly} name="trabajo.abertura" value={formData.trabajo?.abertura || ''} onChange={handleChange} style={inputStyle} /></div>
             </div>
           </div>
         </div>
 
-        <h3 style={sectionHeader}>3. Aislaciones y Detalles</h3>
+        <h3 style={sectionHeader}>3. Aislaciones</h3>
         <div style={grid3}>
            <div><label style={labelStyle}>Largo</label><input readOnly={isReadOnly} name="aislaciones.alta" value={formData.aislaciones?.alta || ''} onChange={handleChange} style={inputStyle} /></div>
            <div><label style={labelStyle}>Ancho</label><input readOnly={isReadOnly} name="aislaciones.ancho" value={formData.aislaciones?.ancho || ''} onChange={handleChange} style={inputStyle} /></div>
            <div><label style={labelStyle}>Cantidad</label><input readOnly={isReadOnly} name="aislaciones.cantidad" value={formData.aislaciones?.cantidad || ''} onChange={handleChange} style={inputStyle} /></div>
         </div>
 
+        {/* FOTOS (Si las hay) */}
+        <h3 style={sectionHeader}>4. Fotos</h3>
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            {formData.fotos?.map((fotoUrl, index) => (
+                <div key={index} style={{ width: '100px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #555' }}>
+                    <img src={fotoUrl} alt="Motor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+            ))}
+            {newImages.map((url, index) => (
+                <div key={`new-${index}`} style={{ width: '100px', height: '100px', borderRadius: '8px', overflow: 'hidden', border: '2px solid #38bdf8' }}>
+                    <img src={url} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.8 }} />
+                </div>
+            ))}
+            {!isReadOnly && (
+                <label style={{ width: '100px', height: '100px', borderRadius: '8px', border: '2px dashed gray', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', opacity: 0.7 }}>
+                    <span style={{ fontSize: '24px' }}>📷</span>
+                    <input type="file" multiple accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+                </label>
+            )}
+        </div>
+
         <label style={labelStyle}>Observaciones</label>
         <textarea readOnly={isReadOnly} name="observaciones" value={formData.observaciones || ''} onChange={handleChange} rows="4" style={{...inputStyle, resize:'vertical'}} />
 
-        {/* BOTÓN DE GUARDAR: Solo visible si NO es modo lectura */}
         {!isReadOnly && (
-          <div style={{ marginTop: '40px', textAlign: 'right', borderTop:'1px solid #e2e8f0', paddingTop:'20px' }}>
-            <button type="submit" className="btn btn-primary" style={{ background: '#0f172a', color: 'white', padding: '12px 30px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '1rem', fontWeight:'600' }}>
+          <div style={{ marginTop: '40px', textAlign: 'right', borderTop:'1px solid rgba(150,150,150,0.2)', paddingTop:'20px' }}>
+            <button type="submit" className="btn btn-primary">
               {isEditMode ? 'GUARDAR CAMBIOS' : 'CREAR FICHA'}
             </button>
           </div>
         )}
-        
-        {/* MENSAJE DE PERMISOS: Si no es modo ver y no tiene permiso, avisa */}
+
         {!isViewMode && !canEdit && (
-           <div style={{ marginTop: '30px', padding: '15px', background: '#fff5f5', color: '#c53030', border: '1px solid #fc8181', borderRadius: '6px', textAlign: 'center' }}>
-             🚫 No tienes permisos para crear o modificar fichas técnicas.
+           <div style={{ marginTop: '30px', padding: '15px', border: '1px solid #ef4444', borderRadius: '6px', textAlign: 'center', color: '#ef4444' }}>
+             🚫 No tienes permisos para modificar fichas.
            </div>
         )}
 
@@ -192,7 +232,7 @@ const MotorForm = () => {
       <Modal 
         isOpen={modalOpen}
         title={isEditMode ? "Confirmar Edición" : "Confirmar Creación"}
-        message={isEditMode ? "¿Guardar cambios en esta ficha?" : "¿Crear nueva ficha de motor?"}
+        message={isEditMode ? "¿Guardar cambios?" : "¿Crear ficha?"}
         onClose={() => setModalOpen(false)}
         onConfirm={confirmSave}
       />

@@ -1,16 +1,19 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext' // <--- 1. IMPORTAR
+import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext' 
 import App from './App.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <AuthProvider> {/* <--- 2. ENVOLVER APP CON ESTO */}
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+    <AuthProvider>
+      <ThemeProvider> 
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ThemeProvider>
     </AuthProvider>
   </React.StrictMode>,
 )

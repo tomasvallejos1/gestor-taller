@@ -1,20 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Paleta Profesional 'Industrial Tech' */
-  --primary: #0f172a;       /* Azul Noche */
+  /* --- MODO CLARO (Default) --- */
+  --primary: #0f172a;       
   --primary-light: #1e293b; 
-  --accent: #0284c7;        /* Azul Eléctrico */
-  --bg-app: #f1f5f9;        /* Gris muy claro */
-  --surface: #ffffff;       /* Blanco puro */
-  --text-main: #334155;     /* Gris oscuro */
-  --text-light: #64748b;    /* Gris medio */
-  --border: #e2e8f0;        /* Bordes sutiles */
-  --danger: #ef4444;        /* Rojo alertas */
-  --success: #10b981;       /* Verde éxito */
+  --accent: #0284c7;        
+  --bg-app: #f1f5f9;        
+  --surface: #ffffff;       
+  --text-main: #334155;     
+  --text-light: #64748b;    
+  --border: #e2e8f0;        
+  --danger: #ef4444;        
+  --success: #10b981;       
   
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --sidebar-width: 260px; /* Ancho fijo del menú en PC */
+  --sidebar-width: 260px;
+}
+
+/* =========================================
+   MODO NOCHE (NEON INDUSTRIAL - CORREGIDO)
+   ========================================= */
+body.dark-mode {
+  --bg-app: #000000;       
+  --surface: #111827;      /* Gray 900 */
+  --text-main: #f3f4f6;    
+  --text-light: #e5e7eb;   /* Gris mucho más claro */
+  --border: #1f2937;       
+  
+  --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.8);
 }
 
 body {
@@ -23,17 +36,93 @@ body {
   background-color: var(--bg-app);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* --- AJUSTES ESPECÍFICOS MODO NOCHE --- */
+
+/* 1. Tarjetas */
+body.dark-mode .card {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-top: 3px solid #38bdf8 !important; 
+}
+
+/* 2. Inputs (Fondo oscuro, Letra Blanca) */
+body.dark-mode input,
+body.dark-mode select,
+body.dark-mode textarea {
+  background-color: #020617 !important; 
+  border: 1px solid #374151 !important;
+  color: #ffffff !important;
+}
+body.dark-mode input:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2) !important;
+}
+
+/* 3. Títulos y Etiquetas (CAMBIO: Blanco Puro) */
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4 {
+  color: #ffffff !important;
+}
+
+body.dark-mode label {
+  color: #ffffff !important; /* <--- AHORA ES BLANCO (Antes gris) */
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* 4. TABLA DE DATOS */
+body.dark-mode table thead th {
+  background-color: #1f2937 !important;
+  color: #38bdf8 !important; /* Títulos de tabla en Celeste Neón */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 2px solid #374151;
+}
+body.dark-mode table tbody td {
+  border-bottom: 1px solid #1f2937;
+  color: #ffffff !important; /* Datos de tabla en Blanco */
+}
+body.dark-mode table tbody tr:hover {
+  background-color: #1e293b !important;
+}
+
+/* 5. ACCIONES EN TABLA */
+body.dark-mode a[href*="ver"] { color: #4ade80 !important; }
+body.dark-mode a[href*="editar"] { color: #fbbf24 !important; }
+body.dark-mode button { color: #f87171 !important; }
+
+/* 6. BOTONES (CAMBIO: Textos Blancos) */
+
+/* Buscar / Principal */
+body.dark-mode .btn-primary {
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+}
+
+/* Limpiar / Secundario */
+body.dark-mode .btn-secondary {
+  background-color: transparent !important;
+  border: 1px solid #94a3b8 !important; /* Borde más visible */
+  color: #ffffff !important; /* <--- AHORA ES BLANCO (Antes gris) */
+}
+body.dark-mode .btn-secondary:hover {
+  background-color: #374151 !important;
+  border-color: #ffffff !important;
 }
 
 /* =========================================
-   DISEÑO BASE (ESCRITORIO / PC)
+   ESTILOS GENERALES (BASE - MODO DÍA)
    ========================================= */
 
-/* Utilidades Texto */
+/* ... (Resto del CSS igual que siempre) ... */
+
 h1, h2, h3, h4 { color: var(--primary); margin: 0; font-weight: 700; letter-spacing: -0.5px; }
 a { text-decoration: none; }
 
-/* Botones Modernos */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -61,7 +150,6 @@ a { text-decoration: none; }
 }
 .btn-secondary:hover { background-color: #f8fafc; color: var(--primary); }
 
-/* Inputs Profesionales */
 input, select, textarea {
   width: 100%;
   padding: 10px 12px;
@@ -85,7 +173,6 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   border-color: #f1f5f9;
 }
 
-/* Tarjetas (Cards) */
 .card {
   background: var(--surface);
   border-radius: 8px;
@@ -94,7 +181,6 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   padding: 24px;
 }
 
-/* Grillas de escritorio */
 .grid-responsive {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -113,12 +199,8 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   overflow-x: auto;
 }
 
-/* 1. Header Móvil: OCULTO EN PC POR DEFECTO */
-.mobile-header {
-  display: none; 
-}
+.mobile-header { display: none; }
 
-/* 2. Sidebar: SIEMPRE VISIBLE EN PC */
 .sidebar {
   position: fixed;
   top: 0;
@@ -129,10 +211,9 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   color: white;
   z-index: 100;
   transition: transform 0.3s ease;
-  transform: translateX(0); /* En PC no se mueve */
+  transform: translateX(0);
 }
 
-/* 3. Contenido del Sistema (Derecha) */
 .system-content {
   margin-left: var(--sidebar-width);
   width: calc(100% - var(--sidebar-width));
@@ -140,16 +221,15 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   min-height: 100vh;
   background-color: var(--bg-app);
   box-sizing: border-box;
+  transition: background-color 0.3s ease;
 }
 
-/* 4. Contenido Público */
 .public-content {
   margin-left: 0;
   width: 100%;
   padding: 0;
 }
 
-/* Botón Hamburguesa */
 .hamburger-btn {
   background: none;
   border: none;
@@ -159,16 +239,12 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   padding: 0 10px;
 }
 
-/* --- ANIMACIONES Y ESTILOS LANDING --- */
-
+/* ANIMACIONES */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
-.fade-in {
-  animation: fadeIn 0.8s ease-out forwards;
-}
+.fade-in { animation: fadeIn 0.8s ease-out forwards; }
 
 .bg-hero {
   background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.7)), 
@@ -177,13 +253,11 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   background-position: center;
   background-attachment: fixed;
 }
-
 .text-gradient {
   background: linear-gradient(90deg, #38bdf8, #818cf8);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-
 .service-card {
   background: white;
   padding: 30px;
@@ -193,28 +267,18 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   border: 1px solid #e2e8f0;
   text-align: center;
 }
-
 .service-card:hover {
   transform: translateY(-10px);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   border-color: var(--accent);
 }
-
 .icon-box {
-  width: 60px;
-  height: 60px;
-  background: #f0f9ff;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 20px auto;
-  font-size: 1.5rem;
-  color: var(--accent);
+  width: 60px; height: 60px; background: #f0f9ff; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto;
+  font-size: 1.5rem; color: var(--accent);
 }
 
-/* --- BARRA DE NAVEGACIÓN PÚBLICA --- */
-
+/* NAVBAR PÚBLICA */
 .navbar {
   background-color: var(--primary);
   color: white;
@@ -228,191 +292,51 @@ input:disabled, textarea:disabled, input[readonly], textarea[readonly] {
   z-index: 1000;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
-
 .navbar-container {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  max-width: 1200px; width: 100%; margin: 0 auto;
+  display: flex; justify-content: space-between; align-items: center;
 }
-
 .nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: white;
-  font-weight: 800;
-  font-size: 1.3rem;
-  letter-spacing: -0.5px;
-  text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px; text-decoration: none;
+  color: white; font-weight: 800; font-size: 1.3rem; letter-spacing: -0.5px; text-transform: uppercase;
 }
-
 .nav-icon {
-  background: var(--accent);
-  width: 35px;
-  height: 35px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  font-size: 1.2rem;
+  background: var(--accent); width: 35px; height: 35px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
 }
-
-.nav-menu {
-  display: flex;
-  gap: 30px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  align-items: center;
-}
-
-.nav-link {
-  color: #cbd5e1;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.3s;
-}
-
-.nav-link:hover {
-  color: var(--accent);
-}
-
+.nav-menu { display: flex; gap: 30px; list-style: none; margin: 0; padding: 0; align-items: center; }
+.nav-link { color: #cbd5e1; text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: color 0.3s; }
+.nav-link:hover { color: var(--accent); }
 .btn-login {
-  background: rgba(255, 255, 255, 0.1);
-  padding: 8px 25px;
-  border-radius: 50px;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  background: rgba(255, 255, 255, 0.1); padding: 8px 25px; border-radius: 50px;
+  color: white; border: 1px solid rgba(255, 255, 255, 0.2); transition: all 0.3s ease;
+  font-weight: 600; letter-spacing: 0.5px;
 }
-
 .btn-login:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #000000 !important;
+  background: var(--accent); border-color: var(--accent); color: #000000 !important;
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.6);
 }
+.menu-icon { display: none; font-size: 1.8rem; cursor: pointer; color: white; }
 
-.menu-icon {
-  display: none;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: white;
-}
-
-/* =========================================
-   DISEÑO RESPONSIVE (CELULAR / TABLET / TABLET HORIZONTAL)
-   ========================================= */
+/* RESPONSIVE */
 @media (max-width: 1024px) {
-
-  /* 1. Header Móvil: APARECE */
-  .mobile-header {
-    display: flex; /* Se muestra la barra azul */
-    background: var(--primary);
-    color: white;
-    padding: 15px 20px;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
-
-  /* 2. Sidebar: OCULTO POR DEFECTO */
-  .sidebar {
-    transform: translateX(-100%); /* Se esconde a la izquierda */
-    z-index: 2000; /* Por encima de todo */
-    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-    width: 280px !important;
-  }
-
-  /* Clase para abrir el sidebar con JS */
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  /* 3. Contenido: Ocupa todo el ancho */
-  .system-content {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding: 15px !important;
-  }
-
-  /* Overlay oscuro */
-  .overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 1500;
-    display: none;
-  }
+  .mobile-header { display: flex; background: var(--primary); color: white; padding: 15px 20px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+  .sidebar { transform: translateX(-100%); z-index: 2000; box-shadow: 4px 0 15px rgba(0,0,0,0.5); width: 280px !important; }
+  .sidebar.open { transform: translateX(0); }
+  .system-content { margin-left: 0 !important; width: 100% !important; padding: 15px !important; }
+  .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1500; display: none; }
   .overlay.show { display: block; }
-
-  /* Ajustes de Tablas y Grillas */
-  .grid-responsive, .grid-responsive-2 {
-    grid-template-columns: 1fr !important;
-    gap: 30px; 
-  }
-  
+  .grid-responsive, .grid-responsive-2 { grid-template-columns: 1fr !important; gap: 30px; }
   .btn { width: 100%; margin-bottom: 10px; }
-  
   .hide-mobile { display: none; }
-
-  /* Ajustes Navbar Pública Móvil */
-  .menu-icon {
-    display: block;
-  }
-
-  .nav-menu {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: auto;
-    position: absolute;
-    top: 70px;
-    left: -100%;
-    background: var(--primary);
-    transition: all 0.3s ease;
-    padding: 20px 0;
-    box-shadow: 0 10px 10px rgba(0,0,0,0.1);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    gap: 0;
-  }
-
-  .nav-menu.active {
-    left: 0; 
-  }
-
-  .nav-item {
-    width: 100%;
-    text-align: center;
-  }
-
-  .nav-link {
-    display: block;
-    padding: 20px;
-    width: 100%;
-    font-size: 1.1rem;
-    color: white;
-  }
-
-  .nav-link:hover {
-    background: rgba(255,255,255,0.05);
-  }
-
-  .btn-login {
-    display: inline-block;
-    width: 80%;
-    margin-top: 10px;
-    text-align: center;
-  }
+  
+  /* Navbar Móvil */
+  .menu-icon { display: block; }
+  .nav-menu { display: flex; flex-direction: column; width: 100%; height: auto; position: absolute; top: 70px; left: -100%; background: var(--primary); transition: all 0.3s ease; padding: 20px 0; box-shadow: 0 10px 10px rgba(0,0,0,0.1); border-top: 1px solid rgba(255,255,255,0.1); gap: 0; }
+  .nav-menu.active { left: 0; }
+  .nav-item { width: 100%; text-align: center; }
+  .nav-link { display: block; padding: 20px; width: 100%; font-size: 1.1rem; color: white; }
+  .nav-link:hover { background: rgba(255,255,255,0.05); }
+  .btn-login { display: inline-block; width: 80%; margin-top: 10px; text-align: center; }
 }
