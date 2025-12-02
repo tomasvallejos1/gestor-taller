@@ -1,67 +1,73 @@
 import React from 'react';
 
-const Modal = ({ isOpen, title, message, onClose, onConfirm, type = 'info' }) => {
+const Modal = ({ isOpen, title, message, onClose, onConfirm, type = 'info', isLoading }) => {
   if (!isOpen) return null;
 
-  // Colores según el tipo de alerta
   const isDanger = type === 'danger';
-  const confirmColor = isDanger ? '#ef4444' : '#0f172a'; // Rojo o Azul Noche
+  const confirmColor = isDanger ? '#ef4444' : '#0f172a';
 
   return (
     <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fondo oscuro semitransparente
-      backdropFilter: 'blur(4px)', // Efecto borroso moderno
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)', 
+      backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 1000
     }}>
       <div style={{
-        background: 'white',
+        background: 'var(--surface)', // Adaptable al tema
+        color: 'var(--text-main)',    // Adaptable al tema
         padding: '30px',
         borderRadius: '12px',
         maxWidth: '400px',
         width: '90%',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        animation: 'fadeIn 0.2s ease-out'
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+        border: '1px solid var(--border)'
       }}>
-        <h3 style={{ marginTop: 0, color: isDanger ? '#dc2626' : '#1e293b', fontSize: '1.25rem' }}>
+        <h3 style={{ marginTop: 0, color: isDanger ? '#ef4444' : 'var(--text-main)', fontSize: '1.25rem' }}>
           {title}
         </h3>
-        <p style={{ color: '#64748b', lineHeight: '1.5', marginBottom: '24px' }}>
+        <p style={{ color: 'var(--text-light)', lineHeight: '1.5', marginBottom: '24px' }}>
           {message}
         </p>
         
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
           <button 
             onClick={onClose}
+            disabled={isLoading} // Bloquear si está cargando
             style={{
               padding: '10px 20px',
-              border: '1px solid #cbd5e1',
-              background: 'white',
-              color: '#475569',
+              border: '1px solid var(--border)',
+              background: 'transparent',
+              color: 'var(--text-light)',
               borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600'
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              opacity: isLoading ? 0.5 : 1
             }}
           >
             Cancelar
           </button>
+          
           <button 
             onClick={onConfirm}
+            disabled={isLoading} // Bloquear si está cargando
             style={{
               padding: '10px 20px',
               border: 'none',
               background: confirmColor,
               color: 'white',
               borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600'
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              fontWeight: '600',
+              opacity: isLoading ? 0.7 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
             }}
           >
-            Confirmar
+            {isLoading && <span className="loader-spinner">⏳</span>}
+            {isLoading ? 'Procesando...' : 'Confirmar'}
           </button>
         </div>
       </div>
