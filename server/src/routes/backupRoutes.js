@@ -1,10 +1,13 @@
 import express from 'express';
-import { downloadBackup } from '../controllers/backupController.js';
+import { downloadBackup, testEmailBackup } from '../controllers/backupController.js';
 import { protect, admin } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Solo Admin descarga
+// Descarga directa
 router.get('/download', protect, admin, downloadBackup);
+
+// Probar envío de mail (Nuevo)
+router.post('/test-email', protect, admin, testEmailBackup);
 
 export default router;

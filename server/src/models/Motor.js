@@ -1,8 +1,9 @@
 import mongoose from 'mongoose';
-import Counter from './Counter.js'; // Importamos el contador
+import Counter from './Counter.js'; 
 
 const motorSchema = mongoose.Schema({
-  nroOrden: { type: Number, unique: true }, 
+  // CAMBIO AQUÍ: De nroOrden a nroMotor
+  nroMotor: { type: Number, unique: true }, 
 
   // Datos Generales
   cliente: { type: String, default: "Cliente General" },
@@ -44,18 +45,17 @@ const motorSchema = mongoose.Schema({
 
 motorSchema.pre('save', async function() {
   const doc = this;
-
-  // Si no es nuevo, terminamos aquí
   if (!doc.isNew) return;
 
   try {
     const counter = await Counter.findByIdAndUpdate(
-      { _id: 'motorId' },
+      { _id: 'motorId' }, // Usamos el contador de ID de Motores
       { $inc: { seq: 1 } },
       { new: true, upsert: true }
     );
 
-    doc.nroOrden = counter.seq;
+    // CAMBIO AQUÍ: Asignamos a nroMotor
+    doc.nroMotor = counter.seq;
     
   } catch (error) {
     throw error;

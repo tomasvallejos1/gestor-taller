@@ -5,8 +5,12 @@ import Modal from '../components/Modal';
 
 const Ajustes = () => {
   const { user } = useContext(AuthContext); 
-  
-  // Estados Perfil
+  const isSuper = user?.rol === 'super';
+
+  // ESTADO DE PESTAÑAS (Default: perfil)
+  const [activeTab, setActiveTab] = useState('perfil');
+
+  // --- ESTADOS MI PERFIL ---
   const [profileData, setProfileData] = useState({
     nombre: user?.nombre || '',
     email: user?.email || '',
@@ -14,18 +18,19 @@ const Ajustes = () => {
     confirmPassword: ''
   });
 
-  // Estados Admin (Usuarios)
+  // --- ESTADOS ADMIN (Usuarios) ---
   const [users, setUsers] = useState([]);
   const [userForm, setUserForm] = useState({ nombre: '', email: '', password: '', rol: 'editor' });
-  const [editingId, setEditingId] = useState(null); // ID del usuario que se está editando
-  const [refresh, setRefresh] = useState(false); 
+  const [editingId, setEditingId] = useState(null);
+  const [refresh, setRefresh] = useState(false);
 
-  // Estados Modal
+  // --- ESTADOS MODAL ---
   const [modalOpen, setModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
 
+  // CARGAR USUARIOS (Solo si es Super y está en la pestaña usuarios)
   useEffect(() => {
-    if (user?.rol === 'super') {
+    if (isSuper && activeTab === 'usuarios') {
       const fetchUsers = async () => {
         try {
           const { data } = await api.get('/auth/users');
@@ -36,9 +41,9 @@ const Ajustes = () => {
       };
       fetchUsers();
     }
-  }, [user, refresh]);
+  }, [isSuper, activeTab, refresh]);
 
-  // --- HANDLER: MI PERFIL ---
+  // --- HANDLERS: MI PERFIL ---
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     if (profileData.password && profileData.password !== profileData.confirmPassword) {
@@ -58,23 +63,17 @@ const Ajustes = () => {
     }
   };
 
-  // --- HANDLER: CREAR O EDITAR USUARIO ---
+  // --- HANDLERS: GESTIÓN USUARIOS ---
   const handleUserSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editingId) {
-        // MODO EDICIÓN
-        await api.put(`/auth/users/${editingId}`, {
-            ...userForm,
-            password: userForm.password || undefined // Si está vacío no se envía
-        });
+        await api.put(`/auth/users/${editingId}`, { ...userForm, password: userForm.password || undefined });
         alert("Usuario actualizado");
       } else {
-        // MODO CREACIÓN
         await api.post('/auth/register', userForm);
         alert("Usuario creado exitosamente");
       }
-      
       resetForm();
       setRefresh(!refresh); 
     } catch (error) {
@@ -84,14 +83,7 @@ const Ajustes = () => {
 
   const startEditing = (u) => {
     setEditingId(u._id);
-    setUserForm({ 
-        nombre: u.nombre, 
-        email: u.email, 
-        password: '', // La contraseña no se trae por seguridad
-        rol: u.rol 
-    });
-    // Scroll suave hacia el formulario
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setUserForm({ nombre: u.nombre, email: u.email, password: '', rol: u.rol });
   };
 
   const resetForm = () => {
@@ -105,67 +97,97 @@ const Ajustes = () => {
       await api.delete(`/auth/users/${userToDelete._id}`);
       setRefresh(!refresh);
       setModalOpen(false);
-      if (editingId === userToDelete._id) resetForm(); // Si estaba editando al que borró
+      if (editingId === userToDelete._id) resetForm();
     } catch (error) {
       alert("Error eliminando: " + error.message);
     }
   };
 
-  // --- ESTILOS ---
-  const headerStyle = { fontSize: '1.5rem', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '20px' };
-  const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', color: '#64748b', marginBottom: '5px', textTransform: 'uppercase' };
-  const inputStyle = { width: '100%', padding: '10px', marginBottom: '15px', borderRadius: '6px', border: '1px solid #cbd5e1' };
-
-  // Botón Principal Estilizado
-  const fancyButtonStyle = {
-    width: '100%',
-    padding: '12px',
-    background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '0.95rem',
-    fontWeight: '600',
-    cursor: 'pointer',
-    letterSpacing: '0.5px',
-    boxShadow: '0 4px 6px rgba(15, 23, 42, 0.2)',
-    transition: 'transform 0.1s, box-shadow 0.1s',
-    marginTop: '10px'
-  };
-
+  // --- HANDLERS: BACKUPS ---
   const handleDownloadBackup = async () => {
     try {
       const response = await api.get('/backup/download', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `backup-${new Date().toISOString().split('T')[0]}.json`);
+      link.setAttribute('download', `taller-backup-${new Date().toISOString().split('T')[0]}.json`);
       document.body.appendChild(link);
       link.click();
       link.remove();
     } catch (error) {
-      alert("Error al descargar. Verifica permisos.");
+      alert("Error descargando backup.");
     }
   };
 
-  return (
-    <div>
-      <h2 style={{ fontSize: '1.75rem', color: '#0f172a', marginBottom: '30px' }}>Configuración del Sistema</h2>
+  const handleTestEmail = async () => {
+    if (!window.confirm("Esto enviará un backup ahora mismo a tu correo. ¿Continuar?")) return;
+    try {
+      alert("⏳ Enviando...");
+      const { data } = await api.post('/backup/test-email');
+      alert("✅ " + data.message);
+    } catch (error) {
+      alert("❌ Error: " + (error.response?.data?.message || error.message));
+    }
+  };
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '30px' }}>
+  // --- ESTILOS ---
+  const labelStyle = { display: 'block', fontSize: '0.8rem', fontWeight: '600', marginBottom: '5px', textTransform: 'uppercase', opacity: 0.8 };
+  const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-app)', color: 'var(--text-main)' };
+  
+  // Estilos de Pestañas
+  const tabContainerStyle = { display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid var(--border)' };
+  const tabStyle = (isActive) => ({
+    padding: '10px 20px',
+    cursor: 'pointer',
+    borderBottom: isActive ? '3px solid var(--accent)' : '3px solid transparent',
+    color: isActive ? 'var(--accent)' : 'var(--text-light)',
+    fontWeight: isActive ? '700' : '500',
+    fontSize: '0.95rem',
+    background: 'transparent',
+    border: 'none',
+    borderBottomWidth: '3px',
+    borderBottomStyle: 'solid',
+    transition: 'all 0.2s'
+  });
+
+  return (
+    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+      <h2 style={{ fontSize: '1.8rem', marginBottom: '20px' }}>Configuración</h2>
+
+      {/* --- PESTAÑAS DE NAVEGACIÓN --- */}
+      <div style={tabContainerStyle}>
+        <button style={tabStyle(activeTab === 'perfil')} onClick={() => setActiveTab('perfil')}>
+          👤 Mi Perfil
+        </button>
         
-        {/* === TARJETA 1: MI PERFIL === */}
-        <div className="card">
-          <h3 style={headerStyle}>👤 Mi Perfil</h3>
-          <form onSubmit={handleProfileUpdate}>
+        {isSuper && (
+          <>
+            <button style={tabStyle(activeTab === 'usuarios')} onClick={() => setActiveTab('usuarios')}>
+              👥 Usuarios
+            </button>
+            <button style={tabStyle(activeTab === 'backups')} onClick={() => setActiveTab('backups')}>
+              💾 Backups
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* --- CONTENIDO DE PESTAÑAS --- */}
+      <div className="card" style={{ padding: '30px' }}>
+        
+        {/* PESTAÑA 1: MI PERFIL */}
+        {activeTab === 'perfil' && (
+          <form onSubmit={handleProfileUpdate} style={{ maxWidth: '500px' }}>
+            <h3 style={{ marginBottom: '20px', fontSize: '1.2rem' }}>Datos Personales</h3>
+            
             <label style={labelStyle}>Nombre</label>
             <input type="text" value={profileData.nombre} onChange={e => setProfileData({...profileData, nombre: e.target.value})} style={inputStyle} />
             
             <label style={labelStyle}>Email</label>
             <input type="email" value={profileData.email} onChange={e => setProfileData({...profileData, email: e.target.value})} style={inputStyle} />
             
-            <div style={{ borderTop: '1px dashed #cbd5e1', margin: '20px 0', paddingTop: '20px' }}>
-                <p style={{fontSize:'0.8rem', color:'#94a3b8', marginBottom:'15px'}}>Cambiar Contraseña (Opcional)</p>
+            <div style={{ borderTop: '1px dashed var(--border)', margin: '20px 0', paddingTop: '20px' }}>
+                <p style={{fontSize:'0.8rem', opacity:0.7, marginBottom:'15px'}}>Cambiar Contraseña (Opcional)</p>
                 <label style={labelStyle}>Nueva Contraseña</label>
                 <input type="password" placeholder="********" value={profileData.password} onChange={e => setProfileData({...profileData, password: e.target.value})} style={inputStyle} />
                 
@@ -173,100 +195,75 @@ const Ajustes = () => {
                 <input type="password" placeholder="********" value={profileData.confirmPassword} onChange={e => setProfileData({...profileData, confirmPassword: e.target.value})} style={inputStyle} />
             </div>
 
-            <button type="submit" style={fancyButtonStyle}>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
                 GUARDAR CAMBIOS
             </button>
           </form>
-        </div>
+        )}
 
-        {/* === TARJETA 2: GESTIÓN DE USUARIOS (Solo Super Admin) === */}
-        {user?.rol === 'super' && (
-          <div className="card">
-            <h3 style={headerStyle}>👥 Gestión de Usuarios (IT)</h3>
+        {/* PESTAÑA 2: GESTIÓN DE USUARIOS */}
+        {activeTab === 'usuarios' && isSuper && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Gestión de Equipo</h3>
+              <button className="btn btn-secondary" onClick={resetForm} style={{fontSize:'0.8rem'}}>Limpiar Formulario</button>
+            </div>
             
-            {/* Formulario Crear/Editar Usuario */}
-            <div style={{ background: '#f8fafc', padding: '20px', borderRadius: '8px', marginBottom: '25px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h4 style={{ fontSize: '0.9rem', color: '#0f172a', margin: 0 }}>
-                    {editingId ? '✏️ EDITAR USUARIO' : '+ CREAR NUEVO USUARIO'}
-                </h4>
-                {editingId && (
-                    <button onClick={resetForm} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.8rem', cursor: 'pointer', textDecoration: 'underline' }}>
-                        Cancelar Edición
-                    </button>
-                )}
-              </div>
-
-              <form onSubmit={handleUserSubmit} style={{ display: 'grid', gap: '10px' }}>
-                <input required placeholder="Nombre Completo" value={userForm.nombre} onChange={e => setUserForm({...userForm, nombre: e.target.value})} style={{...inputStyle, marginBottom:0}} />
-                <input required type="email" placeholder="Correo electrónico" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} style={{...inputStyle, marginBottom:0}} />
-                <input 
-                    type="password" 
-                    placeholder={editingId ? "Nueva contraseña (opcional)" : "Contraseña"} 
-                    required={!editingId} // Obligatoria solo al crear
-                    value={userForm.password} 
-                    onChange={e => setUserForm({...userForm, password: e.target.value})} 
-                    style={{...inputStyle, marginBottom:0}} 
-                />
+            {/* Formulario Crear/Editar */}
+            <div style={{ background: 'var(--bg-app)', padding: '20px', borderRadius: '8px', marginBottom: '30px', border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: '0.9rem', marginBottom: '15px', color: 'var(--accent)' }}>
+                  {editingId ? '✏️ EDITAR USUARIO' : '+ CREAR NUEVO USUARIO'}
+              </h4>
+              <form onSubmit={handleUserSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', alignItems: 'end' }}>
+                <div><input required placeholder="Nombre" value={userForm.nombre} onChange={e => setUserForm({...userForm, nombre: e.target.value})} style={{...inputStyle, marginBottom:0}} /></div>
+                <div><input required type="email" placeholder="Email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} style={{...inputStyle, marginBottom:0}} /></div>
+                <div><input type="password" placeholder={editingId ? "Nueva clave (opcional)" : "Contraseña"} required={!editingId} value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} style={{...inputStyle, marginBottom:0}} /></div>
                 
-                <select value={userForm.rol} onChange={e => setUserForm({...userForm, rol: e.target.value})} style={{...inputStyle, marginBottom:0, cursor:'pointer'}}>
-                  <option value="editor">Editor (Técnico)</option>
-                  <option value="lector">Lector (Solo Ver)</option>
-                  <option value="super">Super Admin (IT)</option>
-                </select>
+                <div>
+                  <select value={userForm.rol} onChange={e => setUserForm({...userForm, rol: e.target.value})} style={{...inputStyle, marginBottom:0, cursor:'pointer'}}>
+                    <option value="editor">Editor (Técnico)</option>
+                    <option value="lector">Lector (Solo Ver)</option>
+                    <option value="super">Super Admin (IT)</option>
+                  </select>
+                </div>
 
-                <button type="submit" style={{ ...fancyButtonStyle, background: editingId ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)' : fancyButtonStyle.background }}>
-                    {editingId ? 'ACTUALIZAR USUARIO' : 'CREAR USUARIO'}
+                <button type="submit" className="btn btn-primary" style={{ height: '42px' }}>
+                    {editingId ? 'ACTUALIZAR' : 'CREAR'}
                 </button>
               </form>
             </div>
 
             {/* Lista de Usuarios */}
-            <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="table-responsive">
               <table style={{ width: '100%', fontSize: '0.9rem', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ background: '#f1f5f9', textAlign: 'left', color:'#64748b' }}>
-                    <th style={{ padding: '10px', fontSize:'0.75rem', textTransform:'uppercase' }}>Usuario</th>
-                    <th style={{ padding: '10px', fontSize:'0.75rem', textTransform:'uppercase' }}>Rol</th>
-                    <th style={{ padding: '10px', textAlign: 'right' }}>Acciones</th>
+                  <tr style={{ background: 'var(--bg-app)', textAlign: 'left' }}>
+                    <th style={{ padding: '10px' }}>USUARIO</th>
+                    <th style={{ padding: '10px' }}>ROL</th>
+                    <th style={{ padding: '10px', textAlign: 'right' }}>ACCIONES</th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
-                    <tr key={u._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <tr key={u._id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '12px' }}>
-                        <div style={{ fontWeight: '600', color:'#0f172a' }}>{u.nombre}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{u.email}</div>
+                        <div style={{ fontWeight: '600' }}>{u.nombre}</div>
+                        <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>{u.email}</div>
                       </td>
                       <td style={{ padding: '12px' }}>
                         <span style={{ 
-                          padding: '4px 8px', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 'bold',
-                          background: u.rol === 'super' ? '#e0f2fe' : (u.rol === 'editor' ? '#dcfce7' : '#f1f5f9'),
-                          color: u.rol === 'super' ? '#0369a1' : (u.rol === 'editor' ? '#15803d' : '#475569')
+                          padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold',
+                          background: u.rol === 'super' ? 'rgba(56, 189, 248, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                          color: u.rol === 'super' ? '#38bdf8' : '#22c55e'
                         }}>
                           {u.rol === 'super' ? 'ADMIN' : u.rol.toUpperCase()}
                         </span>
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         {u._id !== user._id && (
-                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                            {/* BOTÓN EDITAR */}
-                            <button 
-                                onClick={() => startEditing(u)}
-                                title="Editar"
-                                style={{ border: 'none', background: '#f1f5f9', padding:'6px 10px', borderRadius:'4px', cursor: 'pointer', color: '#475569', fontSize: '1rem' }}
-                            >
-                                ✏️
-                            </button>
-
-                            {/* BOTÓN ELIMINAR */}
-                            <button 
-                                onClick={() => { setUserToDelete(u); setModalOpen(true); }}
-                                title="Eliminar"
-                                style={{ border: 'none', background: '#fee2e2', padding:'6px 10px', borderRadius:'4px', cursor: 'pointer', color: '#ef4444', fontSize: '1rem' }}
-                            >
-                                🗑️
-                            </button>
+                          <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => startEditing(u)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-main)', fontSize: '1rem' }}>✏️</button>
+                            <button onClick={() => { setUserToDelete(u); setModalOpen(true); }} style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '1rem' }}>🗑️</button>
                           </div>
                         )}
                       </td>
@@ -278,17 +275,34 @@ const Ajustes = () => {
           </div>
         )}
 
-        <div className="card" style={{ marginTop: '30px' }}>
-            <h3 style={{ fontSize: '1.2rem', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>
-                💾 Copias de Seguridad
-            </h3>
-            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '15px' }}>
-                Descarga una copia completa de la base de datos o configura el envío automático.
+        {/* PESTAÑA 3: BACKUPS */}
+        {activeTab === 'backups' && isSuper && (
+          <div style={{ maxWidth: '600px' }}>
+            <h3 style={{ marginBottom: '20px', fontSize: '1.2rem' }}>Copias de Seguridad</h3>
+            <p style={{ marginBottom: '30px', opacity: 0.8, lineHeight: '1.6' }}>
+              El sistema realiza una copia automática todos los días a las 03:00 AM y la envía a tu correo.
+              También puedes descargar una copia manual o probar el envío de correo aquí.
             </p>
-            <button onClick={handleDownloadBackup} className="btn" style={{ background: '#059669', color: 'white', fontWeight: '600', border: 'none' }}>
-                DESCARGAR RESPALDO AHORA
-            </button>
-        </div>
+
+            <div style={{ display: 'grid', gap: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                <div>
+                  <strong>Descarga Local</strong>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: 0 }}>Guardar archivo .json en esta PC</p>
+                </div>
+                <button onClick={handleDownloadBackup} className="btn btn-secondary">⬇️ Descargar</button>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                <div>
+                  <strong>Prueba de Email</strong>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.6, margin: 0 }}>Enviar copia ahora mismo al correo del sistema</p>
+                </div>
+                <button onClick={handleTestEmail} className="btn btn-primary">📧 Enviar Mail</button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
 

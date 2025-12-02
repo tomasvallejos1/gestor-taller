@@ -12,7 +12,7 @@ const Motores = () => {
   const [filteredMotores, setFilteredMotores] = useState([]);
 
   const [filters, setFilters] = useState({
-    nroOrden: '', marca: '', modelo: '', hp: '', tipo: ''
+    nroMotor: '', marca: '', modelo: '', hp: '', tipo: ''
   });
 
   const [sortOrder, setSortOrder] = useState('newest');
@@ -33,13 +33,13 @@ const Motores = () => {
   const handleFilterChange = (e) => setFilters({ ...filters, [e.target.name]: e.target.value });
   
   const clearFilters = () => {
-    setFilters({ nroOrden: '', marca: '', modelo: '', hp: '', tipo: '' });
+    setFilters({ nroMotor: '', marca: '', modelo: '', hp: '', tipo: '' });
     setSortOrder('newest');
   };
 
   const applyFilters = () => {
     let result = [...motores];
-    if (filters.nroOrden) result = result.filter(m => m.nroOrden?.toString().includes(filters.nroOrden));
+    if (filters.nroMotor) result = result.filter(m => m.nroMotor?.toString().includes(filters.nroMotor));
     if (filters.marca) result = result.filter(m => m.marca.toLowerCase().includes(filters.marca.toLowerCase()));
     if (filters.modelo) result = result.filter(m => m.modelo?.toLowerCase().includes(filters.modelo.toLowerCase()));
     if (filters.hp) result = result.filter(m => m.hp.toLowerCase().includes(filters.hp.toLowerCase()));
@@ -48,8 +48,8 @@ const Motores = () => {
     result.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
-      const idA = a.nroOrden || 0;
-      const idB = b.nroOrden || 0;
+      const idA = a.nroMotor || 0;
+      const idB = b.nroMotor || 0;
       switch (sortOrder) {
         case 'newest': return dateB - dateA;
         case 'oldest': return dateA - dateB;
@@ -97,7 +97,7 @@ const Motores = () => {
         <h4 style={{ margin: '0 0 15px 0', fontSize: '0.9rem', textTransform: 'uppercase' }}>Filtros</h4>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', alignItems: 'end' }}>
-          <div><label style={labelSearchStyle}>N° Ficha</label><input name="nroOrden" value={filters.nroOrden} onChange={handleFilterChange} placeholder="Ej: 5" style={inputSearchStyle} /></div>
+          <div><label style={labelSearchStyle}>N° Ficha</label><input name="nroMotor" value={filters.nroMotor} onChange={handleFilterChange} placeholder="Ej: 5" style={inputSearchStyle} /></div>
           <div><label style={labelSearchStyle}>Marca</label><input name="marca" value={filters.marca} onChange={handleFilterChange} placeholder="Ej: Siemens" style={inputSearchStyle} /></div>
           <div><label style={labelSearchStyle}>Modelo</label><input name="modelo" value={filters.modelo} onChange={handleFilterChange} placeholder="Modelo..." style={inputSearchStyle} /></div>
           <div><label style={labelSearchStyle}>Potencia</label><input name="hp" value={filters.hp} onChange={handleFilterChange} placeholder="Ej: 5.5" style={inputSearchStyle} /></div>
@@ -137,11 +137,11 @@ const Motores = () => {
                 <tr><td colSpan="5" style={{ padding: '50px', textAlign: 'center', opacity: 0.6 }}>Sin resultados.</td></tr>
               ) : (
                 filteredMotores.map((motor) => {
-                  const linkId = motor.nroOrden ? motor.nroOrden : motor._id;
+                  const linkId = motor.nroMotor ? motor.nroMotor : motor._id;
                   return (
                     <tr key={motor._id} style={{ transition: 'background 0.1s' }}>
                       <td style={{...tdStyle, fontWeight: '800'}}>
-                        {motor.nroOrden ? `#${motor.nroOrden}` : '-'}
+                        {motor.nroMotor ? `#${motor.nroMotor}` : '-'}
                       </td>
                       <td style={tdStyle}>
                         {/* Sin color fijo, tomará el blanco del CSS */}
@@ -176,7 +176,7 @@ const Motores = () => {
         Mostrando {filteredMotores.length} registros
       </div>
 
-      <Modal isOpen={modalDeleteOpen} type="danger" title="Eliminar Ficha" message={`¿Borrar ficha #${motorToDelete?.nroOrden}?`} onClose={() => setModalDeleteOpen(false)} onConfirm={confirmDelete} />
+      <Modal isOpen={modalDeleteOpen} type="danger" title="Eliminar Ficha" message={`¿Borrar ficha #${motorToDelete?.nroMotor}?`} onClose={() => setModalDeleteOpen(false)} onConfirm={confirmDelete} />
     </div>
   );
 };

@@ -29,7 +29,7 @@ const MotorForm = () => {
   const [zoomOrigin, setZoomOrigin] = useState('center center');
 
   const safeStructure = {
-    nroOrden: '', marca: '', modelo: '', hp: '', amperaje: '',
+    nroMotor: '', marca: '', modelo: '', hp: '', amperaje: '',
     tipo: '', capacitor: '', largoCarcasa: '', 
     diametroInterior: '', diametroExterior: '',
     observaciones: '', 
@@ -157,11 +157,11 @@ const MotorForm = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', background: 'var(--surface)', padding: '20px', borderRadius: '12px', border: '1px solid var(--border)', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={{ background: '#38bdf8', color: '#0f172a', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: '800' }}>
-            {formData.nroOrden || '+'}
+            {formData.nroMotor || '+'}
           </div>
           <div>
             <h2 style={{ fontSize: '1.5rem', margin: 0, fontWeight: '800', lineHeight: '1.1' }}>
-              {isEditMode ? 'EDITAR MOTOR' : (formData.nroOrden ? 'FICHA TÉCNICA' : 'NUEVO INGRESO')}
+              {isEditMode ? 'EDITAR MOTOR' : (formData.nroMotor ? 'FICHA TÉCNICA' : 'NUEVO INGRESO')}
             </h2>
             <span style={{ fontSize: '0.9rem', opacity: 0.7, fontWeight: '500' }}>
               {formData.marca || 'Marca'} • {formData.modelo || 'Modelo'}
