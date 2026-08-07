@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>client</title>
+  </head>
+  <body>
+    <script>
+      // El tema se aplica antes de que React monte. Aplicarlo despues
+      // tiene dos costos: la pagina pinta una vez en claro y salta, y
+      // arranca una transicion sobre colores que dependen de variables
+      // recien cambiadas --Chromium se queda mostrando el valor viejo y
+      // el fondo queda claro con las tarjetas ya oscuras--.
+      try {
+        if (localStorage.getItem('theme') === 'dark') {
+          document.body.classList.add('dark-mode');
+        }
+      } catch (e) { /* localStorage bloqueado: queda en claro */ }
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

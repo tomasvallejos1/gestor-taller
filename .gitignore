@@ -22,3 +22,14 @@ dist/
 build/
 
 server/seeder.js
+
+# Scripts locales de migracion / debug: suelen llevar credenciales embebidas.
+# Nunca se commitean; si un script debe versionarse, lee de process.env.
+*.local.js
+*.local.mjs
+scripts/tmp/
+
+# Supabase CLI
+supabase/.branches/
+supabase/.temp/
+.env.*.local

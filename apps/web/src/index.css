@@ -1,0 +1,1486 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+/* =========================================================
+   Paleta
+
+   Un solo color de acento (azul acero) sobre una escala de
+   grises. Antes eran dos --violeta y ambar en degrade-- y el
+   degrade estaba tambien en botones, tarjetas y fondo: con dos
+   colores fuertes repartidos por todos lados, nada resalta
+   sobre nada. Con un acento unico, "lo que se puede tocar" es
+   lo unico que tiene color.
+   ========================================================= */
+
+:root {
+  --primary: #131a24;
+  --primary-soft: #1f2833;
+
+  --accent: #2c5f8f;
+  --accent-hover: #234c73;
+  --accent-tint: rgba(44, 95, 143, 0.09);
+  --accent-tint-strong: rgba(44, 95, 143, 0.16);
+  --accent-border: rgba(44, 95, 143, 0.28);
+
+  /* Alias de la paleta vieja: quedan pantallas que todavia piden
+     --purple. Apuntan al acento nuevo para que no sobreviva un
+     violeta suelto en una pantalla ya rediseñada. */
+  --purple: #2c5f8f;
+  --purple-light: #5b8ab8;
+  --purple-dark: #234c73;
+  --accent-soft: #5b8ab8;
+  --info: #0b6bcb;
+
+  --bg-app: #f2f4f7;
+  --bg-muted: #e8ebf0;
+  --surface: #ffffff;
+  --surface-soft: #f7f8fa;
+  --text-main: #1a212b;
+  --text-light: #667085;
+  --border: #dfe3e9;
+  --border-fuerte: #c8cfd9;
+  --danger: #b42318;
+  --success: #067647;
+  --warning: #b54708;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  /* Sombras cortas y de gris neutro. Las de antes eran de 24px y
+     con tinte violeta: sobre una lista de tarjetas se sumaban
+     entre si y el fondo quedaba sucio. */
+  --shadow-soft: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow-medio: 0 2px 4px -1px rgba(16, 24, 40, 0.06), 0 4px 10px -2px rgba(16, 24, 40, 0.09);
+  --shadow-strong: 0 4px 8px -2px rgba(16, 24, 40, 0.08), 0 14px 28px -6px rgba(16, 24, 40, 0.12);
+  --gradient-primary: linear-gradient(180deg, #356f9e 0%, #2a5985 100%);
+  --gradient-dark: #131a24;
+  --gradient-soft: linear-gradient(180deg, #fbfcfd 0%, #f4f6f9 100%);
+  --sidebar-width: 270px;
+}
+
+body.dark-mode {
+  --primary: #eaeef4;
+  --primary-soft: #cdd5e0;
+
+  --accent: #6ba3d6;
+  --accent-hover: #86b6e2;
+  --accent-tint: rgba(107, 163, 214, 0.13);
+  --accent-tint-strong: rgba(107, 163, 214, 0.22);
+  --accent-border: rgba(107, 163, 214, 0.34);
+
+  --purple: #6ba3d6;
+  --purple-light: #86b6e2;
+  --purple-dark: #4d8ac2;
+  --accent-soft: #86b6e2;
+  --info: #4d9de0;
+
+  --bg-app: #0d1117;
+  --bg-muted: #12171f;
+  --surface: #161b23;
+  --surface-soft: #1c222c;
+  --text-main: #e6e9ee;
+  --text-light: #98a2b3;
+  --border: #262d38;
+  --border-fuerte: #364152;
+  --danger: #f97066;
+  --success: #47cd89;
+  --warning: #f79009;
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-medio: 0 2px 4px -1px rgba(0, 0, 0, 0.4), 0 4px 10px -2px rgba(0, 0, 0, 0.35);
+  --shadow-strong: 0 4px 8px -2px rgba(0, 0, 0, 0.45), 0 14px 28px -6px rgba(0, 0, 0, 0.4);
+  --gradient-primary: linear-gradient(180deg, #3f7fb5 0%, #33689a 100%);
+  --gradient-dark: #0b0f15;
+  --gradient-soft: linear-gradient(180deg, #1a212b 0%, #161b23 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Se pone un instante al cambiar de tema (ver ThemeContext). Sin esto,
+   cada color que sale de una variable y esta animado se queda en el
+   valor anterior. */
+.sin-transiciones,
+.sin-transiciones *,
+.sin-transiciones *::before,
+.sin-transiciones *::after {
+  transition: none !important;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  /* Fondo plano. Los dos halos de color que habia antes teñian las
+     tarjetas de arriba de la pagina y no las de abajo. */
+  background: var(--bg-app);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+  /* Sin transicion. El fondo y el color del body dependen de variables
+     que cambian al pasar a modo oscuro, y animar justo esas dos deja a
+     Chromium mostrando el valor viejo: el fondo de la pagina quedaba
+     claro con las tarjetas ya oscuras. Todo lo demas del tema cambia
+     bien porque no esta animado. */
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--primary);
+  font-family: 'Space Grotesk', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.96rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint-strong);
+}
+
+/* Foco visible para quien navega con teclado. Sin esto el unico
+   indicador es el que pinta el navegador, que el reset se come. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+input:disabled,
+textarea:disabled,
+input[readonly],
+textarea[readonly] {
+  background-color: var(--surface-soft);
+  color: var(--text-light);
+}
+
+.card,
+.ui-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-soft);
+}
+
+.ui-card--elevated {
+  box-shadow: var(--shadow-strong);
+  border-color: var(--accent-border);
+}
+
+.btn,
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: none;
+  /* 10px en vez de la pastilla completa: con radio 999px un boton
+     ancho parece una pildora publicitaria. */
+  border-radius: 10px;
+  padding: 0.66rem 1.05rem;
+  /* 44px: es el minimo con el que el dedo acierta. Con el padding solo
+     el boton quedaba en 39px. */
+  min-height: 44px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/* El boton ya no se despega al pasar el mouse: en una lista larga
+   el salto de 1px hacia arriba hace vibrar la fila entera. */
+.btn:active,
+.ui-btn:active {
+  transform: translateY(1px);
+}
+
+.btn-primary,
+.ui-btn--primary {
+  color: #ffffff;
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-soft);
+}
+
+.btn-primary:hover,
+.ui-btn--primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary,
+.ui-btn--secondary {
+  background: var(--surface);
+  border: 1px solid var(--border-fuerte);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover,
+.ui-btn--secondary:hover {
+  background: var(--surface-soft);
+  border-color: var(--text-light);
+}
+
+.ui-btn--danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* Ancho completo solo donde se pide. Antes toda .btn se estiraba al
+   100% debajo de 768px, y eso rompia cualquier fila de dos botones. */
+.btn-bloque {
+  width: 100%;
+}
+
+.ui-btn--sm {
+  padding: 0.55rem 1rem;
+  font-size: 0.82rem;
+}
+
+.ui-btn--md {
+  padding: 0.72rem 1.2rem;
+}
+
+.ui-btn--lg {
+  padding: 0.85rem 1.4rem;
+  font-size: 0.97rem;
+}
+
+.ui-btn:disabled,
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ui-btn__loader {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #ffffff;
+  animation: spin 0.8s linear infinite;
+}
+
+.ui-field {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.ui-field__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-main);
+}
+
+.ui-input {
+  width: 100%;
+}
+
+.ui-input--error {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+.ui-field__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.82rem;
+}
+
+.ui-alert {
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+/* Los colores de texto salen de las variables, asi el modo oscuro no
+   queda con azul marino sobre fondo negro. Las lineas en rgba son el
+   respaldo para navegadores sin color-mix: se declaran antes para que
+   la del color-mix las pise donde si se entiende. */
+.ui-alert--info {
+  color: var(--info);
+  background: rgba(11, 107, 203, 0.12);
+  border-color: rgba(11, 107, 203, 0.30);
+  background: color-mix(in srgb, var(--info) 12%, transparent);
+  border-color: color-mix(in srgb, var(--info) 30%, transparent);
+}
+
+.ui-alert--error {
+  color: var(--danger);
+  background: rgba(180, 35, 24, 0.12);
+  border-color: rgba(180, 35, 24, 0.30);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.ui-alert--success {
+  color: var(--success);
+  background: rgba(6, 118, 71, 0.12);
+  border-color: rgba(6, 118, 71, 0.30);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+.ui-alert--warning {
+  color: var(--warning);
+  background: rgba(181, 71, 8, 0.12);
+  border-color: rgba(181, 71, 8, 0.30);
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+
+.ui-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--text-light);
+}
+
+.ui-spinner-wrap--centered {
+  justify-content: center;
+}
+
+.ui-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-tint-strong);
+  border-top-color: var(--accent);
+  animation: spin 0.9s linear infinite;
+}
+
+.ui-spinner--sm {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+}
+
+.ui-spinner--lg {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+.ui-spinner-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.protected-loading-state {
+  min-height: 72vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-8);
+}
+
+.grid-responsive {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-bottom: var(--space-6);
+}
+
+.grid-responsive-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.mobile-header {
+  display: none;
+}
+
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: var(--sidebar-width);
+  background: var(--gradient-dark);
+  color: #ffffff;
+  z-index: 100;
+  transition: transform 0.3s ease;
+  transform: translateX(0);
+}
+
+.system-content {
+  margin-left: var(--sidebar-width);
+  width: calc(100% - var(--sidebar-width));
+  padding: 30px;
+  min-height: 100vh;
+  background: transparent;
+  transition: background-color 0.25s ease;
+}
+
+.public-content {
+  margin-left: 0;
+  width: 100%;
+  padding: 0;
+}
+
+.hamburger-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0 10px;
+}
+
+.bg-hero {
+  background: linear-gradient(135deg, rgba(8, 8, 16, 0.9), rgba(91, 33, 182, 0.45)),
+    url('https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #ffffff 0%, #bca5ff 40%, #fbbf24 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.service-card {
+  background: var(--surface);
+  padding: 30px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--purple);
+  text-align: center;
+}
+
+.service-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-strong);
+  border-color: rgba(124, 58, 237, 0.4);
+}
+
+.icon-box {
+  width: 60px;
+  height: 60px;
+  background: var(--gradient-primary);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 1.5rem;
+  color: #ffffff;
+}
+
+.navbar {
+  background: rgba(9, 9, 15, 0.85);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  height: 74px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.navbar-container {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.08rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.nav-icon {
+  background: var(--gradient-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 18px rgba(124, 58, 237, 0.42);
+}
+
+.nav-menu {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-link {
+  color: #d8dbf1;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--purple-light);
+}
+
+.btn-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  background: rgba(124, 58, 237, 0.18);
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  color: #ffffff;
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  transition: all 0.25s ease;
+  font-weight: 600;
+}
+
+.btn-login:hover {
+  background: var(--gradient-primary);
+  border-color: transparent;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(124, 58, 237, 0.55);
+}
+
+.menu-icon {
+  display: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.fade-in {
+  animation: fade-in 0.75s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1024px) {
+  .mobile-header {
+    display: flex;
+    background: var(--gradient-dark);
+    color: #ffffff;
+    padding: 15px 20px;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 2000;
+    width: 290px;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .system-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 1500;
+    display: none;
+  }
+
+  .overlay.show {
+    display: block;
+  }
+
+  .menu-icon {
+    display: block;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    position: absolute;
+    top: 74px;
+    left: -100%;
+    background: #0f1122;
+    transition: all 0.25s ease;
+    padding: 16px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 0;
+  }
+
+  .nav-menu.active {
+    left: 0;
+  }
+
+  .nav-item {
+    width: 100%;
+    text-align: center;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 16px;
+    width: 100%;
+    color: #ffffff;
+  }
+
+  .nav-link:hover {
+    background: rgba(124, 58, 237, 0.18);
+  }
+
+  .btn-login {
+    display: inline-flex;
+    width: 84%;
+    margin-top: 6px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid-responsive,
+  .grid-responsive-2 {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .hide-mobile {
+    display: none;
+  }
+
+  .bg-hero {
+    background-attachment: scroll;
+  }
+}
+
+/* =========================================================
+   Navegacion inferior del celular (efecto vidrio)
+
+   Reemplaza al menu hamburguesa. En el taller el telefono se
+   usa con una mano y el pulgar no llega comodo arriba a la
+   derecha; abajo si. Cuatro destinos: mas iconos de este
+   tamaño es una barra donde se toca el que no era.
+   ========================================================= */
+
+.barra-mobile {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .barra-mobile {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    /* safe-area: en iPhone la barra del sistema se come el borde */
+    bottom: 0;
+    padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    z-index: 1400;
+    pointer-events: none;
+  }
+
+  .barra-mobile-vidrio {
+    pointer-events: auto;
+    position: relative;
+    /* isolation crea el contexto de apilado propio: sin esto el
+       ::before del brillo con z-index -1 se va detras de la barra
+       entera y no se ve. */
+    isolation: isolate;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 8px 8px;
+    /* Radio grande y casi tan alto como la mitad de la barra: es lo
+       que la hace leer como una pieza flotante y no como una franja
+       pegada al borde de la pantalla. */
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      0 12px 36px rgba(16, 24, 40, 0.16),
+      0 2px 8px rgba(16, 24, 40, 0.07),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.32);
+    /* El desenfoque es lo que hace el efecto: el contenido que pasa
+       por debajo se ve difuso en vez de taparse con un bloque opaco.
+       La saturacion alta es lo que da el tinte de "vidrio": el color
+       de lo que hay atras se filtra en vez de lavarse a gris. */
+    backdrop-filter: saturate(200%) blur(28px);
+    -webkit-backdrop-filter: saturate(200%) blur(28px);
+  }
+
+  /* Brillo especular: el vidrio real refleja mas arriba que abajo.
+     Sin este degrade la barra parece plastico esmerilado plano. */
+  .barra-mobile-vidrio::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(255, 255, 255, 0.12) 46%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    pointer-events: none;
+  }
+
+  .barra-mobile-item {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    /* 54px de alto: por debajo de ~44px el dedo empieza a errarle */
+    min-height: 54px;
+    border-radius: 22px;
+    text-decoration: none;
+    color: #5c6675;
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: color 0.2s ease, transform 0.14s ease;
+  }
+
+  .barra-mobile-item:active {
+    transform: scale(0.93);
+  }
+
+  .barra-mobile-item.activo {
+    color: var(--accent);
+  }
+
+  /* La pastilla del activo es su propia capa de vidrio, con su brillo
+     arriba. Pintar el fondo del <a> directamente daba un rectangulo
+     de color plano que no pegaba con el resto de la barra. */
+  .barra-mobile-item.activo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--accent-tint-strong);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.65),
+      inset 0 -1px 0 rgba(16, 24, 40, 0.04);
+    animation: pastilla-entra 0.22s ease-out;
+  }
+
+  .barra-mobile-item svg {
+    transition: transform 0.2s ease;
+  }
+
+  .barra-mobile-item.activo svg {
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  /* El contenido tiene que poder scrollear por encima del ultimo
+     elemento sin que la barra lo tape. */
+  .system-content {
+    padding-bottom: calc(94px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Ya no hay hamburguesa que abra el sidebar en el celular. */
+  .hamburger-btn {
+    display: none;
+  }
+
+  .mobile-header {
+    justify-content: flex-start;
+  }
+}
+
+@keyframes pastilla-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+body.dark-mode .barra-mobile-vidrio {
+  background: rgba(22, 27, 35, 0.62);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* En oscuro el brillo va mucho mas tenue: el mismo blanco al 55% que
+   funciona en claro deja la barra lechosa. */
+body.dark-mode .barra-mobile-vidrio::before {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.10) 0%,
+    rgba(255, 255, 255, 0.02) 46%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+body.dark-mode .barra-mobile-item {
+  color: #98a2b3;
+}
+
+body.dark-mode .barra-mobile-item.activo::before {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Si el navegador no soporta backdrop-filter (Firefox viejo), se cae a
+   un fondo solido: sin esto la barra quedaria semitransparente y el
+   texto de atras se leeria a traves. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .barra-mobile-vidrio {
+    background: #ffffff;
+  }
+  body.dark-mode .barra-mobile-vidrio {
+    background: #161b23;
+  }
+}
+
+
+/* =========================================================
+   Animacion de "leyendo la ficha"
+
+   Leer una ficha tarda ~30s. Sin algo que se mueva, la pantalla
+   parece colgada y la gente recarga --perdiendo la lectura, que
+   ya esta paga--.
+   ========================================================= */
+
+.escaner {
+  position: relative;
+  width: 92px;
+  height: 92px;
+  margin: 0 auto;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  /* El fondo va del mismo color que el icono: con --accent ambar y un
+     tinte violeta, el icono quedaba flotando sobre un color ajeno. */
+  color: var(--accent);
+  background: var(--accent-tint-strong);
+  overflow: hidden;
+}
+
+.escaner::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: escanear 1.9s ease-in-out infinite;
+}
+
+@keyframes escanear {
+  0%, 100% { top: 16%; opacity: 0.2; }
+  50%      { top: 80%; opacity: 1; }
+}
+
+.barra-progreso {
+  margin-top: 22px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--accent-tint-strong);
+  overflow: hidden;
+}
+
+.barra-progreso span {
+  display: block;
+  height: 100%;
+  width: 38%;
+  border-radius: 99px;
+  background: var(--accent);
+  animation: correr 1.5s ease-in-out infinite;
+}
+
+@keyframes correr {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(320%); }
+}
+
+/* Respeta a quien pidio menos movimiento en el sistema operativo. */
+@media (prefers-reduced-motion: reduce) {
+  .escaner::after,
+  .barra-progreso span,
+  .barra-mobile-item.activo::before {
+    animation: none;
+  }
+  .escaner::after { top: 50%; opacity: 0.8; }
+  .barra-progreso span { width: 100%; }
+
+  .barra-mobile-item,
+  .barra-mobile-item svg,
+  .barra-mobile-item.activo svg {
+    transition: none;
+    transform: none;
+  }
+}
+
+
+/* =========================================================
+   Listados (motores, clientes, presupuestos)
+
+   Las tres pantallas eran la misma idea escrita tres veces con
+   estilos en linea distintos. Aca viven las piezas comunes, que
+   ademas es lo unico que permite :hover y :focus-visible --un
+   style={{}} no puede expresarlos--.
+   ========================================================= */
+
+.pantalla-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.pantalla-titulo {
+  font-size: 1.5rem;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.pantalla-sub {
+  margin: 3px 0 0;
+  font-size: 0.87rem;
+  color: var(--text-light);
+}
+
+/* --------- Buscador y filtros --------- */
+
+.herramientas {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.buscador {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.buscador > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-light);
+  pointer-events: none;
+}
+
+.buscador input {
+  padding-left: 38px;
+  padding-right: 40px;
+  border-radius: 10px;
+  /* 16px reales: por debajo de eso iOS hace zoom al enfocar el campo
+     y deja la pagina corrida hacia un costado. */
+  font-size: 16px;
+  height: 44px;
+}
+
+.buscador__limpiar {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.buscador__limpiar:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+/* Boton cuadrado de icono: filtros, llamar, menu. */
+.icono-btn {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-fuerte);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.icono-btn:hover {
+  background: var(--surface-soft);
+  border-color: var(--text-light);
+}
+
+.icono-btn--activo {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.icono-btn-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Contador de filtros puestos, sobre el boton de filtros. Sin esto,
+   con el panel cerrado no hay forma de saber que la lista esta
+   filtrada y la busqueda parece que no trae nada. */
+.icono-btn__punto {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* --------- Chips de filtro rapido --------- */
+
+.chips {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 2px 0 8px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  min-height: 36px;
+  border: 1px solid var(--border-fuerte);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-light);
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.chip:hover {
+  border-color: var(--text-light);
+  color: var(--text-main);
+}
+
+.chip.activo {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+
+/* --------- Filas de listado --------- */
+
+.lista {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+}
+
+.fila {
+  position: relative;
+  /* Un item de grid arranca con min-width:auto y no encoge por debajo
+     del ancho de su contenido: una linea larga sin espacios --"N°
+     0001-00000012 · 06/08/2026 · vale hasta 05/09/2026"-- estiraba la
+     tarjeta 60px mas alla de la pantalla y aparecia scroll lateral.
+     Con min-width:0 la fila respeta la columna y el texto recorta. */
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fila:hover {
+  border-color: var(--border-fuerte);
+  box-shadow: var(--shadow-medio);
+}
+
+/* La tarjeta entera es el enlace a la accion principal (ver). El area
+   tactil pasa de un link de 0.85rem a los ~90px de alto de la fila.
+   El padding derecho deja libre la esquina del menu de acciones. */
+.fila-link {
+  display: block;
+  padding: 14px 52px 14px 15px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: inherit;
+}
+
+.fila-encabezado {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+
+.fila-titulo {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fila-nro {
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.fila-sub {
+  margin-top: 3px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fila-etiquetas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+/* Cuando la accion principal no es navegar sino desplegar (clientes),
+   la fila es un boton. Hereda el mismo padding y area tactil. */
+button.fila-link {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fila-acciones {
+  position: absolute;
+  top: 9px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Con dos botones en la esquina el texto necesita mas aire para no
+   pasar por debajo. */
+.fila-link--doble {
+  padding-right: 92px;
+}
+
+.fila-detalle {
+  margin: 0 15px;
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--border);
+  font-size: 0.87rem;
+}
+
+.fila-dato {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+  color: var(--text-light);
+}
+
+.fila-dato svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.etiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+
+.etiqueta--fuerte {
+  border-color: var(--accent-border);
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.importe {
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --------- Menu de acciones ocasionales --------- */
+
+.menu-acciones {
+  position: relative;
+}
+
+.menu-acciones__boton {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-acciones__boton:hover {
+  background: var(--bg-muted);
+  color: var(--text-main);
+}
+
+.menu-acciones__panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  /* Por encima de la barra inferior (1400): en la ultima fila el panel
+     la toca, y detras de ella no se puede tocar "Eliminar". */
+  z-index: 1500;
+  min-width: 172px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: var(--shadow-strong);
+  animation: menu-entra 0.13s ease-out;
+}
+
+@keyframes menu-entra {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menu-acciones__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 11px;
+  min-height: 42px;
+  border: none;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.89rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-acciones__item:hover {
+  background: var(--surface-soft);
+}
+
+.menu-acciones__item--peligro {
+  color: var(--danger);
+}
+
+/* --------- Estados vacios y pie --------- */
+
+.vacio {
+  display: grid;
+  place-items: center;
+  gap: 9px;
+  padding: 46px 22px;
+  border: 1px dashed var(--border-fuerte);
+  border-radius: var(--radius-md);
+  color: var(--text-light);
+  text-align: center;
+}
+
+.vacio > svg {
+  opacity: 0.45;
+}
+
+.contador {
+  margin-top: 12px;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-align: center;
+}
+
+/* --------- Panel de filtros desplegable --------- */
+
+.panel-filtros {
+  padding: 15px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  animation: menu-entra 0.15s ease-out;
+}
+
+.panel-filtros__grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.campo-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.panel-filtros input,
+.panel-filtros select {
+  height: 42px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-acciones__panel,
+  .panel-filtros {
+    animation: none;
+  }
+}
