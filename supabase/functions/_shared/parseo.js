@@ -145,9 +145,24 @@ export function parsearAlambre(entrada) {
   //   ficha A -> "0,300 KG"   (numero, despues unidad)
   //   ficha B -> "KG 1,080"   (unidad, despues numero)
   let kg = null;
-  const pesoAntes = resto.match(/([\d.,]+)\s*(?:kg|kilos?)\b/i);
-  const pesoDespues = resto.match(/\b(?:kg|kilos?)\.?\s*([\d.,]+)/i);
-  const peso = pesoAntes ?? pesoDespues;
+  // El grupo arranca con digito obligatorio. Con [\d.,]+ a secas, en
+  // "0,550 KG." el motor retrocedia sobre el punto final y capturaba "."
+  // como si fuera el peso: parsearNumero(".") da null y el kilaje se
+  // perdia por una tilde de puntuacion.
+  const pesoAntes = resto.match(/(\d[\d.,]*)\s*(?:kg|kilos?)\b/i);
+  const pesoDespues = resto.match(/\b(?:kg|kilos?)\.?\s*(\d[\d.,]*)/i);
+
+  // Si coinciden los dos es porque hay un numero de cada lado del "KG"
+  // --"0,70 KG 1,080"-- y ahi el peso es el de la derecha: el de la
+  // izquierda es el calibre.
+  //
+  // Ganaba el de la izquierda y el alambre salia invertido: 1,08mm de
+  // diametro con 0,70kg, en vez de 0,70mm con 1,080kg. Son bobinados
+  // distintos. Se suponia que el ⌀ desempataba, pero el modelo lo
+  // devuelve como etiqueta aparte y aca llega el valor pelado, sin ese
+  // simbolo: la señal que resolvia la ambiguedad nunca entra a la
+  // funcion.
+  const peso = pesoDespues ?? pesoAntes;
   if (peso) {
     kg = parsearNumero(peso[1]).valor;
     resto = resto.replace(peso[0], ' ');
@@ -175,22 +190,43 @@ export function parsearAbertura(entrada) {
 
   let fraccion = null;
   let resto = texto;
+  let mm = null;
 
-  // Fraccion explicita "2/3" o "3/4".
+  // La medida se saca primero, identificada por el "mm" pegado. Si se
+  // dejaba para el final, una relacion de tres terminos se llevaba
+  // puesto el numero de la abertura al buscar la fraccion.
+  const conUnidad = resto.match(/(\d[\d.,]*)\s*mm\b/i);
+  if (conUnidad) {
+    mm = parsearNumero(conUnidad[1]).valor;
+    resto = resto.replace(conUnidad[0], ' ');
+  }
+
+  // La relacion puede traer tres terminos ("2/3/4"), y en el papel el
+  // primero suele ir separado por un espacio en vez de una barra:
+  // "54mm 2 3/4". Se buscaba solo el par y quedaba "3/4", perdiendo el
+  // primer termino sin avisar.
+  //
+  // Solo se intenta si la medida ya salio: sin ella, el primer numero
+  // del texto es la abertura y no parte de la relacion.
+  const triple = mm === null ? null : resto.match(/(\d+)\s*[/\s]\s*(\d+)\s*\/\s*(\d+)/);
   const barra = resto.match(/(\d+)\s*\/\s*(\d+)/);
-  if (barra) {
+
+  if (triple) {
+    fraccion = `${triple[1]}/${triple[2]}/${triple[3]}`;
+    resto = resto.replace(triple[0], ' ');
+  } else if (barra) {
     fraccion = `${barra[1]}/${barra[2]}`;
-    resto = resto.replace(barra[0], '');
+    resto = resto.replace(barra[0], ' ');
   } else {
     // Numero solo entre parentesis: "(3)".
     const parentesis = resto.match(/\(\s*(\d+)\s*\)/);
     if (parentesis) {
       fraccion = parentesis[1];
-      resto = resto.replace(parentesis[0], '');
+      resto = resto.replace(parentesis[0], ' ');
     }
   }
 
-  const mm = parsearNumero(resto).valor;
+  if (mm === null) mm = parsearNumero(resto).valor;
   return { mm, fraccion, texto };
 }
 
