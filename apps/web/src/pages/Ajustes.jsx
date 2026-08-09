@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { User, Users, ShieldCheck, Copy, Check, Building2 } from 'lucide-react';
+import {
+  User, Users, ShieldCheck, Copy, Check, Building2, Send, RefreshCw, Unlink,
+} from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
@@ -11,7 +13,10 @@ import {
   actualizarPerfilPropio, cambiarEmail, cambiarClave,
 } from '../lib/usuarios';
 import { obtenerConfiguracion, guardarConfiguracion } from '../lib/presupuestos';
+import { generarCodigoTelegram, obtenerEstadoTelegram, desvincularTelegram } from '../lib/telegram';
 import { CONDICIONES_FISCALES, revisarDocumento } from '@shared/fiscal.js';
+
+const DURACION_CODIGO_MS = 10 * 60 * 1000;
 
 const ROLES = [
   { valor: 'lector', etiqueta: 'Lector', ayuda: 'Ve fichas y clientes. No edita ni ve precios.' },
@@ -50,8 +55,53 @@ const Ajustes = () => {
   const [okCfg, setOkCfg] = useState('');
   const [errorCfg, setErrorCfg] = useState('');
 
+  // --- Telegram ---
+  // null mientras no se sabe todavia; despues true/false.
+  const [telegramVinculado, setTelegramVinculado] = useState(null);
+  const [cargandoTelegram, setCargandoTelegram] = useState(true);
+  const [codigoTelegram, setCodigoTelegram] = useState(null); // { codigo, vence }
+  const [ahora, setAhora] = useState(() => Date.now());
+  const [generandoCodigo, setGenerandoCodigo] = useState(false);
+  const [verificando, setVerificando] = useState(false);
+  const [desvinculando, setDesvinculando] = useState(false);
+  const [errorTelegram, setErrorTelegram] = useState('');
+  const [copiadoCodigo, setCopiadoCodigo] = useState(false);
+  const [confirmarDesvinculo, setConfirmarDesvinculo] = useState(false);
+
   useEffect(() => { setNombre(perfil?.nombre ?? ''); }, [perfil?.nombre]);
   useEffect(() => { setEmail(user?.email ?? ''); }, [user?.email]);
+
+  const cargarEstadoTelegram = useCallback(async () => {
+    setCargandoTelegram(true);
+    try {
+      setTelegramVinculado(await obtenerEstadoTelegram());
+    } catch (e) {
+      setErrorTelegram(e.message ?? 'No se pudo consultar el estado.');
+    } finally {
+      setCargandoTelegram(false);
+    }
+  }, []);
+
+  useEffect(() => { cargarEstadoTelegram(); }, [cargarEstadoTelegram]);
+
+  // Cuenta regresiva del codigo: un numero de 6 digitos que vale para
+  // siempre no es un codigo, es una contraseña. A los 10 minutos deja de
+  // servir y hay que pedir otro.
+  //
+  // segundosRestantes no es estado propio: se deriva en cada render a
+  // partir de `ahora`. El efecto solo hace lo que un efecto tiene que
+  // hacer --suscribirse a un reloj externo--, y el setState vive adentro
+  // del callback del interval, no en el cuerpo del efecto.
+  useEffect(() => {
+    if (!codigoTelegram) return undefined;
+    const t = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [codigoTelegram]);
+
+  const segundosRestantes = codigoTelegram
+    ? Math.max(0, Math.round((codigoTelegram.vence - ahora) / 1000))
+    : 0;
+  const codigoVencido = Boolean(codigoTelegram) && segundosRestantes <= 0;
 
   const cargarUsuarios = useCallback(async () => {
     setCargandoUsuarios(true);
@@ -155,6 +205,54 @@ const Ajustes = () => {
     }
   };
 
+  const generarCodigo = async () => {
+    setErrorTelegram('');
+    setGenerandoCodigo(true);
+    try {
+      const codigo = await generarCodigoTelegram();
+      setCodigoTelegram({ codigo, vence: Date.now() + DURACION_CODIGO_MS });
+    } catch (e) {
+      setErrorTelegram(e.message ?? 'No se pudo generar el código.');
+    } finally {
+      setGenerandoCodigo(false);
+    }
+  };
+
+  const copiarCodigo = async () => {
+    await navigator.clipboard.writeText(`/vincular ${codigoTelegram.codigo}`);
+    setCopiadoCodigo(true);
+    setTimeout(() => setCopiadoCodigo(false), 2000);
+  };
+
+  const verificarVinculo = async () => {
+    setErrorTelegram('');
+    setVerificando(true);
+    try {
+      const vinculado = await obtenerEstadoTelegram();
+      setTelegramVinculado(vinculado);
+      if (vinculado) setCodigoTelegram(null);
+      else setErrorTelegram('Todavía no llegó el mensaje. Revisá que hayas mandado el código completo al bot.');
+    } catch (e) {
+      setErrorTelegram(e.message ?? 'No se pudo verificar.');
+    } finally {
+      setVerificando(false);
+    }
+  };
+
+  const desvincular = async () => {
+    setErrorTelegram('');
+    setDesvinculando(true);
+    try {
+      await desvincularTelegram();
+      setTelegramVinculado(false);
+    } catch (e) {
+      setErrorTelegram(e.message ?? 'No se pudo desvincular.');
+    } finally {
+      setDesvinculando(false);
+      setConfirmarDesvinculo(false);
+    }
+  };
+
   const altaUsuario = async (e) => {
     e.preventDefault();
     setErrorUsuarios('');
@@ -219,47 +317,122 @@ const Ajustes = () => {
       </div>
 
       {pestana === 'perfil' && (
-        <form onSubmit={guardarPerfil} className="ui-card" style={{ padding: esMobile ? '18px' : '28px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-            <ShieldCheck size={18} />
-            <span style={{ fontWeight: 700 }}>
-              Tu rol: {ROLES.find((r) => r.valor === perfil?.rol)?.etiqueta ?? perfil?.rol}
-            </span>
-          </div>
+        <>
+          <form onSubmit={guardarPerfil} className="ui-card" style={{ padding: esMobile ? '18px' : '28px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+              <ShieldCheck size={18} />
+              <span style={{ fontWeight: 700 }}>
+                Tu rol: {ROLES.find((r) => r.valor === perfil?.rol)?.etiqueta ?? perfil?.rol}
+              </span>
+            </div>
 
-          {errorPerfil ? <Alert variant="error" className="mb-3">{errorPerfil}</Alert> : null}
-          {okPerfil ? <Alert variant="success" className="mb-3">{okPerfil}</Alert> : null}
+            {errorPerfil ? <Alert variant="error" className="mb-3">{errorPerfil}</Alert> : null}
+            {okPerfil ? <Alert variant="success" className="mb-3">{okPerfil}</Alert> : null}
 
-          <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={labelStyle} htmlFor="p-nombre">Nombre</label>
-              <input id="p-nombre" style={inputStyle} value={nombre}
-                onChange={(e) => setNombre(e.target.value)} required />
+            <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
+              <div>
+                <label style={labelStyle} htmlFor="p-nombre">Nombre</label>
+                <input id="p-nombre" style={inputStyle} value={nombre}
+                  onChange={(e) => setNombre(e.target.value)} required />
+              </div>
+              <div>
+                <label style={labelStyle} htmlFor="p-email">Correo</label>
+                <input id="p-email" type="email" style={inputStyle} value={email}
+                  onChange={(e) => setEmail(e.target.value)} required />
+              </div>
+              <div>
+                <label style={labelStyle} htmlFor="p-clave">Clave nueva</label>
+                <input id="p-clave" type="password" autoComplete="new-password" style={inputStyle}
+                  value={clave} onChange={(e) => setClave(e.target.value)}
+                  placeholder="Dejar vacio para no cambiarla" />
+              </div>
+              <div>
+                <label style={labelStyle} htmlFor="p-clave2">Repetir clave</label>
+                <input id="p-clave2" type="password" autoComplete="new-password" style={inputStyle}
+                  value={claveRepetida} onChange={(e) => setClaveRepetida(e.target.value)} />
+              </div>
             </div>
-            <div>
-              <label style={labelStyle} htmlFor="p-email">Correo</label>
-              <input id="p-email" type="email" style={inputStyle} value={email}
-                onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div>
-              <label style={labelStyle} htmlFor="p-clave">Clave nueva</label>
-              <input id="p-clave" type="password" autoComplete="new-password" style={inputStyle}
-                value={clave} onChange={(e) => setClave(e.target.value)}
-                placeholder="Dejar vacio para no cambiarla" />
-            </div>
-            <div>
-              <label style={labelStyle} htmlFor="p-clave2">Repetir clave</label>
-              <input id="p-clave2" type="password" autoComplete="new-password" style={inputStyle}
-                value={claveRepetida} onChange={(e) => setClaveRepetida(e.target.value)} />
-            </div>
-          </div>
 
-          <div style={{ marginTop: '22px', display: 'flex', justifyContent: 'flex-end' }}>
-            <Button type="submit" variant="primary" size="lg" isLoading={guardandoPerfil}>
-              Guardar cambios
-            </Button>
+            <div style={{ marginTop: '22px', display: 'flex', justifyContent: 'flex-end' }}>
+              <Button type="submit" variant="primary" size="lg" isLoading={guardandoPerfil}>
+                Guardar cambios
+              </Button>
+            </div>
+          </form>
+
+          <div className="ui-card" style={{ padding: esMobile ? '18px' : '28px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+              <Send size={18} />
+              <span style={{ fontWeight: 700 }}>Telegram</span>
+            </div>
+
+            {errorTelegram ? <Alert variant="error" className="mb-3">{errorTelegram}</Alert> : null}
+
+            {cargandoTelegram ? (
+              <Spinner label="Consultando..." />
+            ) : telegramVinculado ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '14px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--success)' }}>
+                  <Check size={17} />
+                  <span style={{ fontWeight: 600 }}>Cuenta vinculada</span>
+                </div>
+                <button type="button" className="btn btn-secondary"
+                  style={{ color: 'var(--danger)' }}
+                  onClick={() => setConfirmarDesvinculo(true)}>
+                  <Unlink size={14} /> Desvincular
+                </button>
+              </div>
+            ) : codigoTelegram && codigoVencido ? (
+              <div>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                  Ese código ya venció.
+                </p>
+                <Button type="button" variant="primary" isLoading={generandoCodigo} onClick={generarCodigo}>
+                  <Send size={14} /> Generar uno nuevo
+                </Button>
+              </div>
+            ) : codigoTelegram ? (
+              <div>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                  Escribile esto al bot, desde Telegram:
+                </p>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                  padding: '14px 16px', borderRadius: '10px', background: 'var(--surface-soft, rgba(0,0,0,0.04))',
+                }}>
+                  <code style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.06em' }}>
+                    /vincular {codigoTelegram.codigo}
+                  </code>
+                  <button type="button" onClick={copiarCodigo} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                    {copiadoCodigo ? <Check size={14} /> : <Copy size={14} />}
+                    {copiadoCodigo ? 'Copiado' : 'Copiar'}
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', marginTop: '10px' }}>
+                  Vale por {Math.floor(segundosRestantes / 60)}:{String(segundosRestantes % 60).padStart(2, '0')} minutos.
+                </p>
+                <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <Button type="button" variant="primary" isLoading={verificando} onClick={verificarVinculo}>
+                    <RefreshCw size={14} /> Ya lo mandé, verificar
+                  </Button>
+                  <button type="button" className="btn btn-secondary" onClick={generarCodigo} disabled={generandoCodigo}>
+                    Generar otro código
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                  Vinculá tu cuenta para pedirle fichas al bot desde Telegram: <code>/ficha</code>,{' '}
+                  <code>/buscar</code> y mandarle fotos para cargar una nueva.
+                </p>
+                <Button type="button" variant="primary" isLoading={generandoCodigo} onClick={generarCodigo}>
+                  <Send size={14} /> Generar código
+                </Button>
+              </div>
+            )}
           </div>
-        </form>
+        </>
       )}
 
       {pestana === 'taller' && esSuper && (
@@ -487,6 +660,16 @@ const Ajustes = () => {
           await aplicarCambio(confirmacion.usuario.id, { activo: confirmacion.activar });
           setConfirmacion(null);
         }}
+      />
+
+      <Modal
+        isOpen={confirmarDesvinculo}
+        type="danger"
+        title="Desvincular Telegram"
+        message="El bot va a dejar de responderte hasta que vuelvas a vincular la cuenta con un código nuevo."
+        onClose={() => setConfirmarDesvinculo(false)}
+        onConfirm={desvincular}
+        isLoading={desvinculando}
       />
     </div>
   );

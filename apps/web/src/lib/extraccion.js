@@ -49,18 +49,67 @@ export async function obtenerExtraccion(id) {
   return data;
 }
 
+/** Estados en los que la lectura ya termino y hay algo que hacer. */
+const ESTADOS_FINALES = new Set(['revision', 'error', 'confirmada']);
+
+const SONDEO_MS = 3000;
+
+/**
+ * Espera a que termine la lectura de una ficha.
+ *
+ * Realtime solo no alcanza. Antes esto era una suscripcion pelada y la
+ * pantalla se quedaba girando para siempre por dos motivos distintos:
+ * la tabla no estaba publicada en supabase_realtime (arreglado en la
+ * migracion 20260808000000), y ademas el websocket se corta solo en un
+ * celular --pantalla apagada, cambio de wifi a datos, señal de taller--.
+ * Lo primero se arreglo una vez; lo segundo va a seguir pasando.
+ *
+ * Asi que hay dos caminos hacia el mismo resultado: Realtime avisa al
+ * instante cuando funciona, y un sondeo cada 3 segundos garantiza que la
+ * pantalla avance igual cuando no. El que llega primero corta al otro.
+ *
+ * `alCambiar` se llama una sola vez, con la fila ya en estado final.
+ */
 export function seguirExtraccion(id, alCambiar) {
-  const canal = supabase
+  let vivo = true;
+  let temporizador = null;
+  let canal = null;
+
+  const soltar = () => {
+    vivo = false;
+    clearTimeout(temporizador);
+    if (canal) supabase.removeChannel(canal);
+  };
+
+  const resolver = (fila) => {
+    if (!vivo || !fila || !ESTADOS_FINALES.has(fila.estado)) return;
+    soltar();
+    alCambiar(fila);
+  };
+
+  canal = supabase
     .channel(`extraccion-${id}`)
     .on('postgres_changes', {
       event: 'UPDATE',
       schema: 'public',
       table: 'ficha_extraccion',
       filter: `id=eq.${id}`,
-    }, (evento) => alCambiar(evento.new))
+    }, (evento) => resolver(evento.new))
     .subscribe();
 
-  return () => { supabase.removeChannel(canal); };
+  const sondear = async () => {
+    if (!vivo) return;
+    try {
+      resolver(await obtenerExtraccion(id));
+    } catch {
+      // Un sondeo que falla no es un error del flujo: puede ser el
+      // ascensor o el tunel. Se reintenta en el proximo ciclo.
+    }
+    if (vivo) temporizador = setTimeout(sondear, SONDEO_MS);
+  };
+  temporizador = setTimeout(sondear, SONDEO_MS);
+
+  return soltar;
 }
 
 export async function confirmarExtraccion(id, datos) {

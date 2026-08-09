@@ -89,26 +89,45 @@ Deno.serve(async (req) => {
   const autorizacion = req.headers.get('Authorization');
   if (!autorizacion) return responder({ error: 'Falta autorizacion.' }, 401);
 
-  const comoUsuario = createClient(url, anon, {
-    global: { headers: { Authorization: autorizacion } },
-  });
-  const { data: { user } } = await comoUsuario.auth.getUser();
-  if (!user) return responder({ error: 'Sesion invalida.' }, 401);
+  const admin = createClient(url, servicio);
 
-  const { data: rol } = await comoUsuario.rpc('rol_actual');
-  if (rol !== 'super' && rol !== 'editor') {
-    return responder({ error: 'Tu perfil no puede emitir presupuestos.' }, 403);
+  /**
+   * Dos formas de llegar acá.
+   *
+   * Desde el navegador viene el JWT del usuario y todo se lee con su
+   * sesion, para que RLS siga decidiendo qué puede ver.
+   *
+   * Desde el bot de Telegram no hay sesion: la Edge Function llama con
+   * la service_role. Esa clave no sale nunca de Supabase --no está en el
+   * bundle del navegador ni viaja al cliente--, asi que tenerla ya
+   * implica ser codigo nuestro. El chequeo de permisos del que emite lo
+   * hizo el bot antes, resolviendo telegram_id -> perfil -> rol.
+   *
+   * La alternativa era duplicar el generador de PDF del lado del bot, y
+   * dos generadores del mismo documento terminan divergiendo.
+   */
+  const interno = autorizacion === `Bearer ${servicio}`;
+  let lector = admin;
+
+  if (!interno) {
+    const comoUsuario = createClient(url, anon, {
+      global: { headers: { Authorization: autorizacion } },
+    });
+    const { data: { user } } = await comoUsuario.auth.getUser();
+    if (!user) return responder({ error: 'Sesion invalida.' }, 401);
+
+    const { data: rol } = await comoUsuario.rpc('rol_actual');
+    if (rol !== 'super' && rol !== 'editor') {
+      return responder({ error: 'Tu perfil no puede emitir presupuestos.' }, 403);
+    }
+    lector = comoUsuario;
   }
 
   let cuerpo: { presupuesto_id?: string };
   try { cuerpo = await req.json(); } catch { return responder({ error: 'Cuerpo invalido.' }, 400); }
   if (!cuerpo.presupuesto_id) return responder({ error: 'Falta presupuesto_id.' }, 400);
 
-  const admin = createClient(url, servicio);
-
-  // Se lee con la sesion del usuario para que RLS siga aplicando: un
-  // lector no deberia poder generar el PDF de un presupuesto.
-  const { data: p, error: eP } = await comoUsuario
+  const { data: p, error: eP } = await lector
     .from('presupuesto')
     .select(`
       id, numero, punto_venta, estado, subtotal, descuento, iva_pct, total,
@@ -121,13 +140,13 @@ Deno.serve(async (req) => {
 
   if (eP || !p) return responder({ error: 'No encontramos ese presupuesto.' }, 404);
 
-  const { data: items } = await comoUsuario
+  const { data: items } = await lector
     .from('presupuesto_item')
     .select('descripcion, cantidad, precio_unit, subtotal, orden')
     .eq('presupuesto_id', p.id)
     .order('orden');
 
-  const { data: cfg } = await comoUsuario
+  const { data: cfg } = await lector
     .from('configuracion').select('*').eq('id', 1).single();
 
   /**
@@ -412,7 +431,9 @@ Deno.serve(async (req) => {
         });
 
         const cel = (ANCHO - MARGEN * 2 - 14) / 2;
-        let col = 0;
+        // `columna` y no `col`: arriba `col` son las columnas del detalle
+        // y aca tapaba esa variable sin que el compilador se queje.
+        let columna = 0;
         let filaY = ALTO - MARGEN - 42;
 
         for (const f of fotos) {
@@ -430,14 +451,14 @@ Deno.serve(async (req) => {
             const h = img.height * escala;
 
             hoja.drawImage(img, {
-              x: MARGEN + col * (cel + 14) + (cel - w) / 2,
+              x: MARGEN + columna * (cel + 14) + (cel - w) / 2,
               y: filaY - h,
               width: w,
               height: h,
             });
 
-            col += 1;
-            if (col === 2) { col = 0; filaY -= 236; }
+            columna += 1;
+            if (columna === 2) { columna = 0; filaY -= 236; }
           } catch {
             // Una foto que no se puede leer no tiene por que voltear el
             // presupuesto entero.

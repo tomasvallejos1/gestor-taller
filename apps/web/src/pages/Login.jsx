@@ -85,6 +85,7 @@ const Login = () => {
           <Input
             label="Correo corporativo"
             type="email"
+            autoComplete="username"
             placeholder="tu@bobinados.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
@@ -93,13 +94,17 @@ const Login = () => {
 
           <div style={{ display: 'grid', gap: '8px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="ui-field__label">Contrasena</span>
-              <Link to="/forgot-password" style={{ fontSize: '0.84rem', color: 'var(--purple-dark)', fontWeight: 600 }}>
+              {/* label con htmlFor y no un span suelto: asi tocar la
+                  palabra enfoca el campo, como en el de arriba. */}
+              <label className="ui-field__label" htmlFor="login-clave">Contraseña</label>
+              <Link to="/forgot-password" style={{ fontSize: '0.84rem', color: 'var(--accent)', fontWeight: 600 }}>
                 Recuperar acceso
               </Link>
             </div>
             <Input
+              id="login-clave"
               type="password"
+              autoComplete="current-password"
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

@@ -160,7 +160,12 @@ textarea {
   background: var(--surface);
   color: var(--text-main);
   font-family: inherit;
-  font-size: 0.96rem;
+  /* 16px y no 0.96rem (15,36px). Safari en iPhone hace zoom al enfocar
+     cualquier campo que mida menos de 16px, y despues deja la pagina
+     corrida y agrandada para el resto del formulario. Es la causa mas
+     comun de "en el celular se ve mal" en un formulario que en la
+     compu se ve bien. */
+  font-size: 16px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
@@ -320,6 +325,43 @@ textarea[readonly] {
 .ui-input--error {
   border-color: var(--danger);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.16);
+}
+
+/* Campo de contrasena con el ojo adentro. */
+.ui-field__caja {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* Espacio reservado para el boton: sin esto una clave larga pasa por
+   debajo del icono y no se lee lo que uno mismo escribio. */
+.ui-input--con-ojo {
+  padding-right: 48px;
+}
+
+.ui-field__ojo {
+  position: absolute;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.ui-field__ojo:hover {
+  color: var(--text);
+  background: var(--surface-soft);
+}
+
+.ui-field__ojo:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .ui-field__error {
@@ -1481,6 +1523,733 @@ button.fila-link {
 @media (prefers-reduced-motion: reduce) {
   .menu-acciones__panel,
   .panel-filtros {
+    animation: none;
+  }
+}
+
+
+/* ============================================================
+   Revisar la lectura de una ficha
+   ============================================================
+   Se completa parado al lado del banco, con la ficha de papel en
+   una mano y el celular en la otra. Todo lo de abajo sale de eso.
+*/
+
+.rev-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.rev-card {
+  padding: 22px;
+}
+
+.rev-h3 {
+  font-size: 1.05rem;
+  margin-top: 26px;
+  margin-bottom: 12px;
+}
+
+.rev-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-light);
+}
+
+/* 16px exactos y no 0.98rem: por debajo de 16 Safari hace zoom al
+   enfocar un input y deja la pantalla corrida para el resto del
+   formulario. Es la causa mas comun de "se ve mal en el iPhone". */
+.rev-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  min-height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 16px;
+  color: inherit;
+  background: var(--surface);
+}
+
+.rev-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rev-fuente {
+  font-size: 0.76rem;
+  color: var(--text-light);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.rev-grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.rev-grilla--chica {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.rev-bloque {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.rev-bloque--circuito {
+  padding: 14px;
+  background: var(--surface-soft);
+}
+
+.rev-bloque__cab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.rev-quitar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+  color: var(--danger);
+}
+
+.rev-quitar:hover {
+  background: var(--surface-soft);
+}
+
+.rev-aislacion {
+  display: grid;
+  grid-template-columns: 1.4fr 90px 90px 80px;
+  gap: 8px;
+}
+
+.rev-secciones__cab {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr 1fr 40px;
+  gap: 7px;
+  margin-bottom: 5px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.rev-seccion {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr 1fr 40px;
+  gap: 7px;
+  align-items: center;
+}
+
+.rev-seccion__n {
+  font-size: 0.76rem;
+  color: var(--text-light);
+  font-weight: 700;
+  text-align: center;
+}
+
+.rev-acciones {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+/* La foto, en el celular, como una fila y no como media pantalla:
+   se abre entera cuando hace falta comparar, que es cuando importa. */
+.rev-verfoto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rev-verfoto img {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-soft);
+}
+
+.rev-verfoto span {
+  flex: 1;
+  min-width: 0;
+}
+
+.rev-verfoto strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.rev-verfoto small {
+  display: block;
+  color: var(--text-light);
+  font-size: 0.8rem;
+}
+
+.rev-verfoto svg {
+  color: var(--text-light);
+  flex-shrink: 0;
+}
+
+/* Lupa a pantalla completa. La imagen se deja desbordar a proposito:
+   una ficha manuscrita hay que poder recorrerla de cerca. */
+.rev-lupa {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.94);
+}
+
+.rev-lupa__marco {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.rev-lupa__marco img {
+  display: block;
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  margin: 0 auto;
+}
+
+.rev-lupa__cerrar {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top, 0px));
+  right: 12px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .rev-card {
+    padding: 15px;
+  }
+
+  /* Una aislacion por tarjeta: los cuatro campos en fila daban 430px
+     de ancho minimo y desbordaban cualquier telefono. */
+  .rev-aislacion {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .rev-aislacion__que {
+    grid-column: 1 / -1;
+  }
+
+  .rev-secciones__cab,
+  .rev-seccion {
+    grid-template-columns: 22px 1fr 1fr 1fr 38px;
+    gap: 5px;
+  }
+
+  /* Guardar y descartar, fijos sobre la barra de navegacion: el
+     formulario mide tres pantallas y son las dos acciones que cierran
+     el flujo. Al final de todo obligaban a scrollear para salir. */
+  .rev-acciones {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    z-index: 1300;
+    margin: 0;
+    padding: 10px 14px;
+    justify-content: stretch;
+    flex-wrap: nowrap;
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(16px);
+    border-top: 1px solid var(--border);
+  }
+
+  .rev-acciones > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Espacio para que la barra de acciones no tape el ultimo campo. */
+  .revision {
+    padding-bottom: 72px;
+  }
+}
+
+
+/* ============================================================
+   Panel
+   ============================================================ */
+
+/* minmax(0, 1fr) y no el 1fr implicito: una columna de grid no baja de
+   su min-content, y basta una descripcion larga con white-space: nowrap
+   adentro para que la columna entera se estire y desborde la pantalla
+   --arrastrando con ella a todo lo demas, que no tiene la culpa--. */
+.panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.panel__saludo h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.01em;
+}
+
+.panel__saludo p {
+  margin: 3px 0 0;
+  color: var(--text-light);
+  font-size: 0.88rem;
+}
+
+/* Dos columnas tambien en el telefono: los cuatro numeros son para
+   leer de un vistazo, y apilados quedaban en dos pantallas. */
+.panel__numeros {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.numero {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.numero__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.numero__titulo {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-light);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.numero__valor {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.numero__pista {
+  font-size: 0.76rem;
+  color: var(--text-light);
+}
+
+.panel__dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.panel__dos > article {
+  min-width: 0;
+}
+
+.ficha-reciente {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  min-height: 46px;
+  /* Es item de grid, y un item de grid arranca con min-width: auto: sin
+     esto la descripcion con nowrap no se recorta, estira la fila y de
+     ahi para arriba desborda toda la pantalla. */
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  text-decoration: none;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.ficha-reciente__n {
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha-reciente__desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 900px) {
+  .panel__numeros {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .panel__dos {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .panel__saludo h2 {
+    font-size: 1.7rem;
+  }
+}
+
+
+/* ---------- Accesos directos ---------- */
+
+.accesos__cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 9px;
+}
+
+.accesos__titulo {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-light);
+}
+
+.accesos__editar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  /* El area tactil llega a 44px por el padding, pero los margenes
+     negativos la sacan del flujo: se toca comodo sin que el titulo
+     quede separado de la grilla. */
+  padding: 11px 10px;
+  margin: -11px -10px;
+  min-height: 44px;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.accesos__editar:hover {
+  background: var(--surface-soft);
+}
+
+.accesos__grilla {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.acceso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 5px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  text-align: center;
+}
+
+.acceso:active {
+  background: var(--surface-soft);
+}
+
+.acceso__icono {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  background: var(--accent-tint-strong);
+  color: var(--accent);
+}
+
+.acceso__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.accesos__vacio {
+  width: 100%;
+  padding: 18px 14px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  background: none;
+  color: var(--text-light);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .accesos__grilla {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1100px) {
+  .accesos__grilla {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+}
+
+
+/* ---------- Hoja inferior ---------- */
+/* Sube desde abajo en el telefono, donde esta el pulgar; en pantalla
+   grande se centra como un dialogo comun. */
+
+.hoja {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.hoja__fondo {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+
+.hoja__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 520px;
+  max-height: 86vh;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.22);
+  animation: hoja-sube 0.22s ease-out;
+}
+
+@keyframes hoja-sube {
+  from { transform: translateY(14px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.hoja__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 16px 0;
+}
+
+.hoja__cerrar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -8px -6px 0 0;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.hoja__cerrar:hover {
+  background: var(--surface-soft);
+}
+
+.hoja__ayuda {
+  margin: 6px 16px 10px;
+  font-size: 0.84rem;
+  color: var(--text-light);
+  line-height: 1.45;
+}
+
+.hoja__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hoja__grupo {
+  margin: 12px 6px 5px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-light);
+}
+
+.hoja__item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 10px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.hoja__item:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+
+.hoja__item--puesto {
+  border-color: var(--accent-border);
+  background: var(--accent-tint);
+}
+
+.hoja__item:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.hoja__item-ayuda {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tilde {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  color: #fff;
+}
+
+.tilde--si {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.hoja__pie {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--border);
+}
+
+.hoja__pie > * {
+  flex: 1;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .hoja {
+    align-items: center;
+  }
+
+  .hoja__panel {
+    border-radius: 18px;
+    border-bottom: 1px solid var(--border);
+    max-height: 80vh;
+    /* Nombre propio en vez de redefinir hoja-sube: dos @keyframes con el
+       mismo nombre no se combinan, gana el ultimo que matchee, y eso
+       depende del orden del archivo mas que de la intencion. */
+    animation-name: hoja-aparece;
+  }
+
+  @keyframes hoja-aparece {
+    from { transform: scale(0.98); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hoja__panel {
     animation: none;
   }
 }

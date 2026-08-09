@@ -61,19 +61,35 @@ const NuevoMotor = () => {
     return () => { vigente = false; };
   }, [fichaId, modo]);
 
-  // Mientras lee, se escucha el cambio de estado en vez de encuestar la
-  // base cada dos segundos.
+  // Mientras lee, seguirExtraccion combina Realtime con un sondeo de
+  // respaldo y avisa una sola vez, ya con la fila en estado final.
   useEffect(() => {
     if (paso !== PASOS.LEYENDO || !fichaId) return undefined;
     return seguirExtraccion(fichaId, (fila) => {
-      if (fila.estado === 'revision') {
-        setPaso(PASOS.REVISAR);
-      } else if (fila.estado === 'error') {
+      if (fila.estado === 'error') {
         setError(fila.error ?? 'No se pudo leer la ficha. Probá con otra foto, mejor iluminada.');
         setParams({}, { replace: true });
+      } else {
+        // revision o confirmada: en los dos casos hay ficha que mirar.
+        setPaso(PASOS.REVISAR);
       }
     });
   }, [paso, fichaId, setParams]);
+
+  // Cuanto hace que esta esperando. Sirve para dejar de mentirle: pasado
+  // cierto punto, "esperá un poco mas" es peor que decirle que algo raro
+  // pasa y darle la salida.
+  //
+  // Se mide contra el instante de arranque en vez de sumar un segundo por
+  // tick: el celular congela los timers con la pantalla bloqueada, y
+  // sumando ticks el contador diria 20 segundos despues de dos minutos.
+  const [segundos, setSegundos] = useState(0);
+  useEffect(() => {
+    if (paso !== PASOS.LEYENDO) return undefined;
+    const desde = Date.now();
+    const t = setInterval(() => setSegundos(Math.round((Date.now() - desde) / 1000)), 500);
+    return () => clearInterval(t);
+  }, [paso]);
 
   const subir = async (e) => {
     const archivo = e.target.files?.[0];
@@ -111,27 +127,42 @@ const NuevoMotor = () => {
   // ---------- Trabajando ----------
   if (paso === PASOS.SUBIENDO || paso === PASOS.LEYENDO) {
     const subiendo = paso === PASOS.SUBIENDO;
+    // Una lectura normal tarda entre 15 y 40 segundos. Pasado el minuto y
+    // medio ya no es lentitud, y seguir mostrando "esperá" seria mentir.
+    const demorado = segundos > 90;
+
     return (
-      <div style={{ maxWidth: '520px', margin: '0 auto', padding: esMobile ? '40px 4px' : '64px 0' }}>
-        <div className="ui-card" style={{ padding: esMobile ? '32px 20px' : '44px 32px', textAlign: 'center' }}>
+      <div style={{ maxWidth: '520px', margin: '0 auto', padding: esMobile ? '24px 0' : '64px 0' }}>
+        <div className="ui-card" style={{ padding: esMobile ? '30px 20px' : '44px 32px', textAlign: 'center' }}>
           <div className="escaner" aria-hidden="true">
             <ScanLine size={38} />
           </div>
 
           <h2 style={{ fontSize: '1.2rem', margin: '22px 0 8px' }}>
-            {subiendo ? 'Subiendo la foto...' : 'Leyendo la ficha'}
+            {subiendo ? 'Subiendo la foto...' : demorado ? 'Está tardando más de lo normal' : 'Leyendo la ficha'}
           </h2>
-          <p style={{ color: 'var(--text-light)', fontSize: '0.92rem', margin: 0 }}>
-            {subiendo
-              ? 'Un segundo, se esta achicando y subiendo la imagen.'
-              : 'Puede tardar hasta medio minuto. Podés dejar la pantalla prendida; si se corta, volvé a entrar y la lectura sigue acá.'}
+
+          <p style={{ color: 'var(--text-light)', fontSize: '0.92rem', margin: 0, lineHeight: 1.55 }}>
+            {subiendo && 'Un segundo, se está achicando y subiendo la imagen.'}
+            {!subiendo && !demorado && (
+              'Suele tardar hasta medio minuto. Podés bloquear el celular: la lectura sigue del lado del servidor y te espera acá.'
+            )}
+            {!subiendo && demorado && (
+              'La foto ya está guardada y la lectura sigue corriendo. Podés seguir esperando, o volver y entrar más tarde desde la misma pantalla: no se pierde ni se vuelve a cobrar.'
+            )}
           </p>
+
+          {!subiendo && (
+            <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-light)', fontVariantNumeric: 'tabular-nums' }}>
+              {segundos < 60 ? `${segundos} s` : `${Math.floor(segundos / 60)} min ${segundos % 60} s`}
+            </div>
+          )}
 
           <div className="barra-progreso" aria-hidden="true"><span /></div>
 
           <button type="button" onClick={volverAElegir}
-            className="btn btn-secondary" style={{ marginTop: '22px', fontSize: '0.86rem' }}>
-            Cancelar
+            className="btn btn-secondary btn-bloque" style={{ marginTop: '20px', fontSize: '0.88rem' }}>
+            {demorado ? 'Volver y seguir después' : 'Cancelar'}
           </button>
         </div>
       </div>

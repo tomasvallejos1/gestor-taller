@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Hammer, FileText, Tags, Settings, BarChart3, Moon, Sun,
-  LogOut, ChevronRight, ShieldCheck,
+  Moon, Sun, LogOut, ChevronRight, ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Modal from '../components/Modal';
+import { DESTINOS, GRUPOS, puedeVer } from '../lib/accesos';
 
 /**
  * Lo que no entra en la barra de abajo.
@@ -14,40 +14,16 @@ import Modal from '../components/Modal';
  * Es la pantalla "Mas" del celular, pero la ruta existe siempre: en
  * escritorio se llega por el sidebar y no hace falta, aunque tampoco
  * molesta que ande.
+ *
+ * La lista sale de lib/accesos.js, el mismo catalogo que usan los
+ * accesos directos del panel. Estaba duplicada, y una seccion nueva
+ * habia que acordarse de sumarla en los dos lados.
  */
-
-const SECCIONES = [
-  {
-    titulo: 'Taller',
-    items: [
-      { to: '/sistema/reparaciones', label: 'Reparaciones', ayuda: 'Ordenes abiertas y cerradas', icon: Hammer },
-    ],
-  },
-  {
-    titulo: 'Facturacion',
-    rol: 'editor',
-    items: [
-      { to: '/sistema/presupuestos', label: 'Presupuestos', ayuda: 'Cotizaciones y PDF para el cliente', icon: FileText },
-      { to: '/sistema/catalogo', label: 'Lista de precios', ayuda: 'Trabajos frecuentes y su precio', icon: Tags },
-    ],
-  },
-  {
-    titulo: 'Sistema',
-    items: [
-      { to: '/sistema/informes', label: 'Informes', ayuda: 'Estadisticas del taller', icon: BarChart3 },
-      { to: '/sistema/ajustes', label: 'Ajustes', ayuda: 'Tu perfil, usuarios y datos del taller', icon: Settings },
-    ],
-  },
-];
 
 const Mas = () => {
   const { logout, perfil, esEditor } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
   const [confirmarSalida, setConfirmarSalida] = useState(false);
-
-  // Un lector no ve precios: mostrarle la seccion y que despues le rebote
-  // por RLS es peor que no mostrarsela.
-  const puede = (rol) => (rol !== 'editor' ? true : Boolean(esEditor));
 
   const fila = {
     display: 'flex', alignItems: 'center', gap: '13px',
@@ -74,28 +50,34 @@ const Mas = () => {
         {perfil?.nombre ? `Hola, ${perfil.nombre}.` : ''} Todo lo que no entra abajo.
       </p>
 
-      {SECCIONES.filter((s) => puede(s.rol)).map((seccion) => (
-        <div key={seccion.titulo}>
-          <div style={tituloGrupo}>{seccion.titulo}</div>
-          <div className="ui-card" style={{ padding: 0, overflow: 'hidden' }}>
-            {seccion.items.map((item, i, arr) => {
-              const Icono = item.icon;
-              const { to, label, ayuda } = item;
-              return (
-              <Link key={to} to={to}
-                style={{ ...fila, borderBottom: i === arr.length - 1 ? 'none' : fila.borderBottom }}>
-                <span style={icono}><Icono size={17} /></span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span style={{ display: 'block', fontWeight: 600 }}>{label}</span>
-                  <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>{ayuda}</span>
-                </span>
-                <ChevronRight size={17} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
-              </Link>
-              );
-            })}
+      {GRUPOS.map((grupo) => {
+        // Un lector no ve precios: mostrarle la seccion y que despues le
+        // rebote por RLS es peor que no mostrarsela.
+        const items = DESTINOS.filter((d) => d.grupo === grupo && puedeVer(d, esEditor));
+        if (items.length === 0) return null;
+
+        return (
+          <div key={grupo}>
+            <div style={tituloGrupo}>{grupo}</div>
+            <div className="ui-card" style={{ padding: 0, overflow: 'hidden' }}>
+              {items.map((item, i, arr) => {
+                const Icono = item.icon;
+                return (
+                  <Link key={item.id} to={item.to}
+                    style={{ ...fila, borderBottom: i === arr.length - 1 ? 'none' : fila.borderBottom }}>
+                    <span style={icono}><Icono size={17} /></span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ display: 'block', fontWeight: 600 }}>{item.label}</span>
+                      <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>{item.ayuda}</span>
+                    </span>
+                    <ChevronRight size={17} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
+                  </Link>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div style={tituloGrupo}>Preferencias</div>
       <div className="ui-card" style={{ padding: 0, overflow: 'hidden' }}>

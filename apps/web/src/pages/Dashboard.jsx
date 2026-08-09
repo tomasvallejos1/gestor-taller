@@ -1,14 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, PackageCheck, Clock, FileText, Timer, ArrowUpRight,
+  Activity, PackageCheck, Clock, FileText, ArrowUpRight,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
+import AccesosDirectos from '../components/AccesosDirectos';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ETIQUETA_ESTADO, COLOR_ESTADO } from '../lib/reparaciones';
 
+/**
+ * Panel.
+ *
+ * Se saco el encabezado "Centro de Operaciones": ocupaba la primera
+ * pantalla entera del celular para decir el nombre de la pantalla en la
+ * que uno ya esta. Lo primero que se ve ahora son los atajos y los
+ * numeros, que es a lo que se entra.
+ *
+ * Las tarjetas van en dos columnas incluso en el telefono. Una sola
+ * columna dejaba los cuatro numeros repartidos en dos pantallas, y el
+ * sentido de esto es verlos de un vistazo.
+ */
+
+const saludo = () => {
+  const h = new Date().getHours();
+  if (h < 13) return 'Buen día';
+  if (h < 20) return 'Buenas tardes';
+  return 'Buenas noches';
+};
+
 const Dashboard = () => {
+  const { perfil } = useAuth();
   const [datos, setDatos] = useState(null);
   const [error, setError] = useState('');
 
@@ -28,12 +51,12 @@ const Dashboard = () => {
       titulo: 'En el taller',
       valor: datos.reparaciones_abiertas,
       pista: datos.ingresos_mes === 1 ? '1 ingreso este mes' : `${datos.ingresos_mes} ingresos este mes`,
-      color: 'var(--purple)',
+      color: 'var(--accent)',
       icono: Activity,
       a: '/sistema/reparaciones',
     },
     {
-      titulo: 'Listas para retirar',
+      titulo: 'Para retirar',
       valor: datos.listas_para_retirar,
       pista: datos.listas_para_retirar > 0 ? 'Avisar a los clientes' : 'Nada pendiente de aviso',
       color: 'var(--success)',
@@ -44,15 +67,15 @@ const Dashboard = () => {
       titulo: 'Esperando repuesto',
       valor: datos.esperando_repuesto,
       pista: datos.esperando_repuesto > 0 ? 'Trabajo en pausa' : 'Sin bloqueos',
-      color: 'var(--warning, #d97706)',
+      color: 'var(--warning)',
       icono: Clock,
       a: '/sistema/reparaciones',
     },
     {
-      titulo: 'Fichas tecnicas',
+      titulo: 'Fichas técnicas',
       valor: datos.fichas,
-      pista: `${datos.clientes} cliente${datos.clientes === 1 ? '' : 's'} registrado${datos.clientes === 1 ? '' : 's'}`,
-      color: 'var(--accent)',
+      pista: `${datos.clientes} cliente${datos.clientes === 1 ? '' : 's'}`,
+      color: 'var(--text-light)',
       icono: FileText,
       a: '/sistema/motores',
     },
@@ -62,87 +85,51 @@ const Dashboard = () => {
   const maximo = Math.max(1, ...porEstado.map(([, n]) => n));
 
   return (
-    <div style={{ display: 'grid', gap: '22px' }}>
-      <header
-        className="ui-card"
-        style={{
-          background: 'var(--gradient-soft)',
-          borderColor: 'var(--accent-tint-strong)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: '14px',
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <h2 style={{ fontSize: '1.8rem', marginBottom: '6px' }}>Centro de Operaciones</h2>
-          <p style={{ margin: 0, color: 'var(--text-light)' }}>
-            Vista general del estado operativo del taller.
-          </p>
-        </div>
-
+    <div className="panel">
+      <div className="panel__saludo">
+        <h2>{saludo()}{perfil?.nombre ? `, ${perfil.nombre.split(' ')[0]}` : ''}</h2>
         {datos?.dias_promedio != null && (
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 14px',
-              borderRadius: '999px',
-              background: 'var(--accent-tint-strong)',
-              border: '1px solid var(--accent-tint-strong)',
-              color: 'var(--purple-dark)',
-              fontWeight: 600,
-            }}
-          >
-            <Timer size={16} />
-            {datos.dias_promedio} dias promedio por reparacion
-          </div>
+          <p>{datos.dias_promedio} días promedio por reparación</p>
         )}
-      </header>
+      </div>
+
+      <AccesosDirectos />
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       {!datos && !error ? (
         <div className="ui-card" style={{ padding: '50px' }}>
-          <Spinner label="Cargando metricas..." centered />
+          <Spinner label="Cargando métricas..." centered />
         </div>
       ) : datos && (
         <>
-          <section className="grid-responsive" style={{ marginBottom: 0 }}>
+          <section className="panel__numeros">
             {tarjetas.map((t) => {
               const Icono = t.icono;
               return (
-                <Link
-                  key={t.titulo}
-                  to={t.a}
-                  className="ui-card ui-card--elevated"
-                  style={{ borderTop: `4px solid ${t.color}`, textDecoration: 'none', color: 'inherit', display: 'block' }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                    <p style={{ margin: 0, fontWeight: 600, color: 'var(--text-light)' }}>{t.titulo}</p>
-                    <span style={{ width: '34px', height: '34px', borderRadius: '10px', display: 'grid', placeItems: 'center', background: 'var(--accent-tint-strong)', color: 'var(--purple)' }}>
-                      <Icono size={17} />
-                    </span>
+                <Link key={t.titulo} to={t.a} className="numero"
+                  style={{ borderTopColor: t.color }}>
+                  <div className="numero__cab">
+                    <span className="numero__titulo">{t.titulo}</span>
+                    <Icono size={15} style={{ color: t.color, flexShrink: 0 }} />
                   </div>
-                  <p style={{ fontSize: '2rem', margin: 0, fontWeight: 800 }}>{t.valor}</p>
-                  <small style={{ color: 'var(--text-light)' }}>{t.pista}</small>
+                  <span className="numero__valor">{t.valor}</span>
+                  <span className="numero__pista">{t.pista}</span>
                 </Link>
               );
             })}
           </section>
 
-          <section className="grid-responsive-2" style={{ alignItems: 'start' }}>
+          <section className="panel__dos">
             <article className="ui-card">
-              <h3 style={{ marginBottom: '8px' }}>Ordenes por estado</h3>
-              <p style={{ marginTop: 0, marginBottom: '18px', color: 'var(--text-light)' }}>
-                Donde esta parado el trabajo ahora mismo.
+              <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.05rem' }}>Órdenes por estado</h3>
+              <p style={{ marginTop: 0, marginBottom: '16px', color: 'var(--text-light)', fontSize: '0.88rem' }}>
+                Dónde está parado el trabajo ahora mismo.
               </p>
 
               {porEstado.length === 0 ? (
-                <p style={{ color: 'var(--text-light)', margin: 0 }}>
-                  Todavia no hay ordenes cargadas.{' '}
+                <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.9rem' }}>
+                  Todavía no hay órdenes cargadas.{' '}
                   <Link to="/sistema/reparaciones" style={{ color: 'var(--accent)' }}>Crear la primera</Link>.
                 </p>
               ) : (
@@ -161,7 +148,7 @@ const Dashboard = () => {
                           width: `${(cantidad / maximo) * 100}%`,
                           height: '100%',
                           borderRadius: '999px',
-                          background: COLOR_ESTADO[estado] ?? 'var(--purple)',
+                          background: COLOR_ESTADO[estado] ?? 'var(--accent)',
                         }} />
                       </div>
                     </div>
@@ -171,37 +158,23 @@ const Dashboard = () => {
             </article>
 
             <article className="ui-card">
-              <h3 style={{ marginBottom: '8px' }}>Ultimas fichas</h3>
-              <p style={{ marginTop: 0, marginBottom: '16px', color: 'var(--text-light)' }}>
-                Lo mas reciente que se cargo.
+              <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.05rem' }}>Últimas fichas</h3>
+              <p style={{ marginTop: 0, marginBottom: '14px', color: 'var(--text-light)', fontSize: '0.88rem' }}>
+                Lo más reciente que se cargó.
               </p>
 
               {(datos.ultimas_fichas ?? []).length === 0 ? (
-                <p style={{ color: 'var(--text-light)', margin: 0 }}>
-                  Sin fichas todavia.{' '}
+                <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.9rem' }}>
+                  Sin fichas todavía.{' '}
                   <Link to="/sistema/motores/nuevo" style={{ color: 'var(--accent)' }}>Cargar una</Link>.
                 </p>
               ) : (
-                <div style={{ display: 'grid', gap: '10px' }}>
+                <div style={{ display: 'grid', gap: '8px' }}>
                   {datos.ultimas_fichas.map((f) => (
-                    <Link
-                      key={f.id}
-                      to={`/sistema/motores/ver/${f.nro_motor}`}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border)',
-                        background: 'var(--surface-soft)',
-                        fontWeight: 500,
-                        textDecoration: 'none',
-                        color: 'inherit',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: '10px',
-                      }}
-                    >
-                      <span>#{f.nro_motor} · {f.descripcion}</span>
-                      <ArrowUpRight size={16} style={{ flexShrink: 0, opacity: 0.6 }} />
+                    <Link key={f.id} to={`/sistema/motores/ver/${f.nro_motor}`} className="ficha-reciente">
+                      <span className="ficha-reciente__n">#{f.nro_motor}</span>
+                      <span className="ficha-reciente__desc">{f.descripcion}</span>
+                      <ArrowUpRight size={15} style={{ flexShrink: 0, opacity: 0.55 }} />
                     </Link>
                   ))}
                 </div>
