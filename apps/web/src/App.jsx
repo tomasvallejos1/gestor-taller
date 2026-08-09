@@ -6,6 +6,7 @@ import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import BarraMobile from './components/BarraMobile';
 import ProtectedRoute from './components/ProtectedRoute';
+import ActualizacionPwa from './components/ActualizacionPwa';
 
 import Home from './pages/Home';
 import Status from './pages/Status';
@@ -45,7 +46,8 @@ function App() {
 
   return (
     <div className="app-container">
-      
+      <ActualizacionPwa />
+
       {isSystemRoute && user ? (
         <>
           {/* Cabecera del celular. Ya no lleva hamburguesa: la navegacion

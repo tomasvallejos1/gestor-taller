@@ -1,0 +1,16 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Solo el dibujo, sin fondo. Mismas coordenadas que icon-fuente.svg a
+    proposito: es el mismo glifo, separado para poder componerlo sobre
+    un color solido al generar el icono maskable (generar-iconos.mjs).
+    Si se cambia el dibujo de uno, hay que cambiar el otro igual.
+  -->
+  <rect x="226" y="146" width="60" height="220" rx="8" fill="#0f2a42"/>
+  <g fill="none" stroke="#e8b84b" stroke-width="14" stroke-linecap="round">
+    <ellipse cx="256" cy="176" rx="90" ry="26"/>
+    <ellipse cx="256" cy="216" rx="90" ry="26"/>
+    <ellipse cx="256" cy="256" rx="90" ry="26"/>
+    <ellipse cx="256" cy="296" rx="90" ry="26"/>
+    <ellipse cx="256" cy="336" rx="90" ry="26"/>
+  </g>
+</svg>

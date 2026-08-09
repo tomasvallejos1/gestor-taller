@@ -1,0 +1,34 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Fuente del icono de la app. El resto de los PNG (manifest, apple
+    touch icon, maskable) se generan de este archivo con scripts/generar-iconos.mjs.
+
+    Motivo del dibujo: una bobina de alambre enrollada sobre un nucleo,
+    que es literalmente lo que hace el taller. Nada generico tipo
+    llave inglesa: eso podria ser cualquier taller mecanico.
+  -->
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2c5f8f"/>
+      <stop offset="1" stop-color="#1c3f61"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#fondo)"/>
+
+  <!-- Nucleo del bobinado -->
+  <rect x="226" y="146" width="60" height="220" rx="8" fill="#0f2a42"/>
+
+  <!--
+    El alambre: una serie de elipses que se ven como vueltas de bobina
+    alrededor del nucleo, mas claras arriba y mas oscuras abajo para dar
+    volumen sin depender de un degrade complejo.
+  -->
+  <g fill="none" stroke="#e8b84b" stroke-width="14" stroke-linecap="round">
+    <ellipse cx="256" cy="176" rx="90" ry="26"/>
+    <ellipse cx="256" cy="216" rx="90" ry="26"/>
+    <ellipse cx="256" cy="256" rx="90" ry="26"/>
+    <ellipse cx="256" cy="296" rx="90" ry="26"/>
+    <ellipse cx="256" cy="336" rx="90" ry="26"/>
+  </g>
+</svg>
