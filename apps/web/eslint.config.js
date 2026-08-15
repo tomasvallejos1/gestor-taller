@@ -24,6 +24,19 @@ export default defineConfig([
     },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      // `@shared` aliasea a supabase/functions/_shared (ver vite.config.js).
+      // Todo lo que vive bajo `_shared/deno/` importa `npm:pdf-lib` u otro
+      // paquete que solo Deno sabe resolver: si el navegador lo importa,
+      // Vite intenta resolver el especificador `npm:...` y el build revienta.
+      // Lo que haga falta del lado del navegador va en @shared/comprobante-modelo.js.
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          group: ['@shared/deno/*'],
+          message: 'Ese modulo importa npm:pdf-lib u otro paquete de Deno y '
+            + 'solo corre en las Edge Functions. Lo que necesites de ahi va '
+            + 'en @shared/comprobante-modelo.js.',
+        }],
+      }],
     },
   },
 ])

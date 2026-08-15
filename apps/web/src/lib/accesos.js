@@ -1,5 +1,5 @@
 import {
-  Hammer, FileText, Tags, Settings, BarChart3, Users, ScanLine, Wrench,
+  Hammer, FileText, Tags, Settings, BarChart3, Users, ScanLine, Wrench, Receipt,
 } from 'lucide-react';
 
 /**
@@ -69,6 +69,16 @@ export const DESTINOS = [
     grupo: 'Facturacion',
     rol: 'editor',
     icon: Tags,
+  },
+  {
+    id: 'facturas',
+    to: '/sistema/facturacion',
+    label: 'Facturas',
+    corto: 'Facturas',
+    ayuda: 'Comprobantes emitidos con CAE de ARCA',
+    grupo: 'Facturacion',
+    rol: 'editor',
+    icon: Receipt,
   },
   {
     id: 'informes',

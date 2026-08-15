@@ -228,8 +228,13 @@ try {
   const anon = { apikey: process.env.SUPABASE_ANON_KEY ?? CLAVE,
     Authorization: `Bearer ${process.env.SUPABASE_ANON_KEY ?? CLAVE}`,
     'Content-Type': 'application/json' };
+  // La firma cambio: ahora exige apellido ademas del numero, para que
+  // /estado no sea recorrible con solo un correlativo. Un numero
+  // inexistente sigue devolviendo 200 con `null`, no un error: eso es
+  // lo que impide distinguir "no existe" de "el apellido no coincide".
   const rEstado = await fetch(`${URL_BASE}/rest/v1/rpc/consultar_estado`, {
-    method: 'POST', headers: anon, body: JSON.stringify({ p_numero: 999999 }),
+    method: 'POST', headers: anon,
+    body: JSON.stringify({ p_numero: 999999, p_apellido: 'nadie' }),
   });
   comprobar('consultar_estado es invocable por anonimo', rEstado.ok, String(rEstado.status));
 

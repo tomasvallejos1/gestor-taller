@@ -15,7 +15,10 @@ import { listarClientes } from '../lib/clientes';
 import { listarMotores } from '../lib/motores';
 
 const hoy = () => new Date().toISOString().slice(0, 10);
-const VACIA = { id: null, motor_id: '', cliente_id: '', estado: 'ingresado', ingreso: hoy(), egreso: '', notas: '' };
+const VACIA = {
+  id: null, motor_id: '', cliente_id: '', estado: 'ingresado', ingreso: hoy(), egreso: '',
+  problema: '', diagnostico: '', notas: '',
+};
 
 const Reparaciones = () => {
   const { esEditor } = useAuth();
@@ -79,8 +82,16 @@ const Reparaciones = () => {
 
   const guardar = async (e) => {
     e.preventDefault();
-    setGuardando(true);
     setError('');
+    // El cliente es obligatorio para una orden nueva: sin cliente no hay
+    // con quien verificar el seguimiento publico ni a nombre de quien
+    // emitir el remito o la factura despues. Una orden ya cargada sin
+    // cliente se puede seguir editando: no se le exige retroactivamente.
+    if (!editando.id && !editando.cliente_id) {
+      setError('Elegi un cliente para la orden.');
+      return;
+    }
+    setGuardando(true);
     try {
       await guardarReparacion(editando);
       setEditando(null);
@@ -137,10 +148,12 @@ const Reparaciones = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
             <div>
-              <label style={labelStyle} htmlFor="r-cliente">Cliente</label>
-              <select id="r-cliente" style={inputStyle} value={editando.cliente_id ?? ''}
+              <label style={labelStyle} htmlFor="r-cliente">
+                Cliente{!editando.id && ' *'}
+              </label>
+              <select id="r-cliente" required={!editando.id} style={inputStyle} value={editando.cliente_id ?? ''}
                 onChange={(e) => setEditando({ ...editando, cliente_id: e.target.value })}>
-                <option value="">Sin asignar</option>
+                <option value="">{editando.id ? 'Sin asignar' : 'Elegi un cliente'}</option>
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
@@ -148,7 +161,7 @@ const Reparaciones = () => {
               <label style={labelStyle} htmlFor="r-motor">Ficha del motor</label>
               <select id="r-motor" style={inputStyle} value={editando.motor_id ?? ''}
                 onChange={(e) => setEditando({ ...editando, motor_id: e.target.value })}>
-                <option value="">Sin ficha</option>
+                <option value="">Sin ficha — se puede vincular despues</option>
                 {motores.map((m) => (
                   <option key={m.id} value={m.id}>#{m.nro_motor} — {m.descripcion}</option>
                 ))}
@@ -165,6 +178,13 @@ const Reparaciones = () => {
               <label style={labelStyle} htmlFor="r-ingreso">Ingreso</label>
               <input id="r-ingreso" type="date" style={inputStyle} value={editando.ingreso ?? ''}
                 onChange={(e) => setEditando({ ...editando, ingreso: e.target.value })} />
+            </div>
+            <div style={{ gridColumn: esMobile ? 'auto' : 'span 2' }}>
+              <label style={labelStyle} htmlFor="r-problema">Problema declarado</label>
+              <textarea id="r-problema" rows={2} style={{ ...inputStyle, resize: 'vertical' }}
+                value={editando.problema ?? ''}
+                onChange={(e) => setEditando({ ...editando, problema: e.target.value })}
+                placeholder="Ej: Hace ruido y no arranca" />
             </div>
             <div style={{ gridColumn: esMobile ? 'auto' : 'span 2' }}>
               <label style={labelStyle} htmlFor="r-notas">Notas internas</label>
@@ -225,7 +245,9 @@ const Reparaciones = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-                    <span style={{ fontWeight: 800, fontSize: '1.05rem' }}>Orden #{r.numero}</span>
+                    <Link to={`/sistema/reparaciones/${r.id}`} style={{ fontWeight: 800, fontSize: '1.05rem', color: 'inherit', textDecoration: 'none' }}>
+                      Orden #{r.numero}
+                    </Link>
                     <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 700, border: `1px solid ${COLOR_ESTADO[r.estado]}`, color: COLOR_ESTADO[r.estado] }}>
                       {ETIQUETA_ESTADO[r.estado]}
                     </span>

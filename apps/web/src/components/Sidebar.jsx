@@ -7,6 +7,7 @@ import {
   Users,
   FileText,
   Tags,
+  Receipt,
   Settings,
   Moon,
   Sun,
@@ -26,7 +27,8 @@ const navItems = [
   // La lista de precios solo se llegaba desde un boton en la cabecera
   // de Presupuestos. Es una seccion propia --en el celular ya figura
   // en "Mas"-- y merece estar en el menu.
-  { to: '/sistema/catalogo', label: 'Lista de precios', icon: Tags }
+  { to: '/sistema/catalogo', label: 'Lista de precios', icon: Tags },
+  { to: '/sistema/facturacion', label: 'Facturas', icon: Receipt },
 ];
 
 const Sidebar = ({ isOpen, closeMenu }) => {

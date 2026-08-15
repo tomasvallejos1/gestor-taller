@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Search, PackageCheck, CircleAlert } from 'lucide-react';
+import { Search, PackageCheck, CircleAlert, FileText, Truck } from 'lucide-react';
 import { consultarEstadoPublico, ETIQUETA_ESTADO } from '../lib/reparaciones';
 
 /**
  * Consulta publica de estado.
  *
- * Va contra la funcion consultar_estado, que devuelve unicamente numero,
- * estado, fechas y descripcion del motor. Nada del cliente, nada del
- * detalle tecnico, ninguna nota interna: cualquiera con un numero puede
- * llamar a esto, asi que lo que no se devuelve importa mas que lo que si.
+ * Va contra la funcion consultar_estado, que ahora exige numero de
+ * orden Y apellido del cliente. El numero solo es un correlativo: sin
+ * el segundo factor, cualquiera podia recorrer las ordenes del taller
+ * escribiendo 1, 2, 3.
+ *
+ * Lo que se devuelve es deliberadamente pobre: el estado actual (sin
+ * detalles ni observaciones, tal como se pidio) y los links a los
+ * documentos publicos que ya existan. Nada del cliente, nada del
+ * detalle tecnico, ninguna nota interna.
  */
 
 // El recorrido normal de una orden. El estado actual pinta este hito y
@@ -22,6 +27,7 @@ const HITOS = [
 
 const Status = () => {
   const [numero, setNumero] = useState('');
+  const [apellido, setApellido] = useState('');
   const [buscando, setBuscando] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [sinResultado, setSinResultado] = useState(false);
@@ -33,11 +39,11 @@ const Status = () => {
     setResultado(null);
     setSinResultado(false);
 
-    if (!numero.trim()) return;
+    if (!numero.trim() || !apellido.trim()) return;
 
     setBuscando(true);
     try {
-      const r = await consultarEstadoPublico(numero);
+      const r = await consultarEstadoPublico(numero, apellido);
       if (r) setResultado(r);
       else setSinResultado(true);
     } catch {
@@ -51,6 +57,11 @@ const Status = () => {
   const cancelada = resultado?.estado === 'cancelado';
   const esperando = resultado?.estado === 'esperando_repuesto';
 
+  const inputStyle = {
+    border: 'none', background: 'transparent', fontSize: '1rem', padding: '12px',
+    flex: 1, outline: 'none', color: 'inherit', minWidth: 0,
+  };
+
   return (
     <div style={{ minHeight: '80vh', background: 'var(--bg-app, #f8fafc)', padding: '60px 20px' }}>
       <div style={{ maxWidth: '620px', margin: '0 auto' }}>
@@ -58,25 +69,37 @@ const Status = () => {
         <div style={{ textAlign: 'center', marginBottom: '36px' }}>
           <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Estado de tu reparacion</h2>
           <p style={{ color: 'var(--text-light, #64748b)', margin: 0 }}>
-            Ingresa el numero de orden que figura en tu comprobante.
+            Ingresa el numero de orden y el apellido con el que se registro el equipo.
           </p>
         </div>
 
-        <form onSubmit={buscar} style={{ display: 'flex', gap: '10px', background: 'var(--surface, white)', padding: '10px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={numero}
-            onChange={(e) => setNumero(e.target.value)}
-            placeholder="N° de orden (ej: 12)"
-            aria-label="Numero de orden"
-            style={{ border: 'none', background: 'transparent', fontSize: '1rem', padding: '12px', flex: 1, outline: 'none', color: 'inherit', minWidth: 0 }}
-          />
-          <button type="submit" className="btn btn-primary" disabled={buscando}
-            style={{ borderRadius: '8px', padding: '12px 22px', minHeight: '44px', whiteSpace: 'nowrap' }}>
-            <Search size={16} />
-            {buscando ? 'Buscando...' : 'Buscar'}
-          </button>
+        <form onSubmit={buscar} style={{ display: 'grid', gap: '10px', background: 'var(--surface, white)', padding: '10px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={numero}
+              onChange={(e) => setNumero(e.target.value)}
+              placeholder="N° de orden (ej: 12)"
+              aria-label="Numero de orden"
+              style={inputStyle}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '10px', borderTop: '1px solid var(--border, #e2e8f0)', paddingTop: '10px' }}>
+            <input
+              type="text"
+              value={apellido}
+              onChange={(e) => setApellido(e.target.value)}
+              placeholder="Apellido del cliente"
+              aria-label="Apellido"
+              style={inputStyle}
+            />
+            <button type="submit" className="btn btn-primary" disabled={buscando}
+              style={{ borderRadius: '8px', padding: '12px 22px', minHeight: '44px', whiteSpace: 'nowrap' }}>
+              <Search size={16} />
+              {buscando ? 'Buscando...' : 'Buscar'}
+            </button>
+          </div>
         </form>
 
         {error && (
@@ -90,7 +113,7 @@ const Status = () => {
             <CircleAlert size={26} style={{ opacity: 0.6, marginBottom: '10px' }} />
             <h3 style={{ margin: '0 0 6px', fontSize: '1.1rem' }}>No encontramos esa orden</h3>
             <p style={{ color: 'var(--text-light, #64748b)', margin: 0, fontSize: '0.92rem' }}>
-              Revisa el numero de tu comprobante. Si el problema sigue, llamanos
+              Revisa el numero de tu comprobante y el apellido. Si el problema sigue, llamanos
               al (3462) 55-3285.
             </p>
           </div>
@@ -110,11 +133,6 @@ const Status = () => {
               <h3 style={{ marginTop: '12px', marginBottom: '4px', fontSize: '1.2rem' }}>
                 Orden #{resultado.numero}
               </h3>
-              {resultado.descripcion && (
-                <p style={{ color: 'var(--text-light, #64748b)', fontSize: '0.92rem', margin: 0 }}>
-                  {resultado.descripcion}
-                </p>
-              )}
             </div>
 
             {cancelada ? (
@@ -169,6 +187,25 @@ const Status = () => {
                     <span style={{ fontSize: '0.92rem' }}>
                       Tu motor esta listo. Podes pasar a retirarlo en el horario de atencion.
                     </span>
+                  </div>
+                )}
+
+                {(resultado.presupuesto || resultado.remito) && (
+                  <div style={{ marginTop: '20px', display: 'grid', gap: '8px' }}>
+                    {resultado.presupuesto && (
+                      <a href={`/p/${resultado.presupuesto.token}`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border, #e2e8f0)', textDecoration: 'none', color: 'inherit' }}>
+                        <FileText size={18} style={{ color: 'var(--accent, #0284c7)' }} />
+                        <span>Ver presupuesto {resultado.presupuesto.comprobante}</span>
+                      </a>
+                    )}
+                    {resultado.remito && (
+                      <a href={`/r/${resultado.remito.token}`} target="_blank" rel="noopener noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border, #e2e8f0)', textDecoration: 'none', color: 'inherit' }}>
+                        <Truck size={18} style={{ color: 'var(--accent, #0284c7)' }} />
+                        <span>Ver remito {resultado.remito.comprobante}</span>
+                      </a>
+                    )}
                   </div>
                 )}
               </>

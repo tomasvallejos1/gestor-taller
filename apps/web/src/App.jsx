@@ -16,6 +16,7 @@ import MotorForm from './pages/MotorForm';
 import Ajustes from './pages/Ajustes';
 import Clientes from './pages/Clientes';
 import Reparaciones from './pages/Reparaciones';
+import ReparacionDetalle from './pages/ReparacionDetalle';
 import NuevoMotor from './pages/NuevoMotor';
 import Mas from './pages/Mas';
 import ComingSoon from './pages/ComingSoon';
@@ -25,6 +26,9 @@ import Presupuestos from './pages/Presupuestos';
 import PresupuestoForm from './pages/PresupuestoForm';
 import PresupuestoPublico from './pages/PresupuestoPublico';
 import Catalogo from './pages/Catalogo';
+import RemitoForm from './pages/RemitoForm';
+import RemitoPublico from './pages/RemitoPublico';
+import Facturas from './pages/Facturas';
 
 function App() {
   const { user } = useAuth();
@@ -33,12 +37,14 @@ function App() {
 
   const isSystemRoute = location.pathname.startsWith('/sistema');
 
-  // El presupuesto compartido se ve sin nada alrededor: el cliente abre
-  // el link desde WhatsApp y tiene que ver el documento, no el sitio.
-  if (location.pathname.startsWith('/p/')) {
+  // El presupuesto y el remito compartidos se ven sin nada alrededor: el
+  // cliente abre el link desde WhatsApp y tiene que ver el documento, no
+  // el sitio.
+  if (location.pathname.startsWith('/p/') || location.pathname.startsWith('/r/')) {
     return (
       <Routes>
         <Route path="/p/:token" element={<PresupuestoPublico />} />
+        <Route path="/r/:token" element={<RemitoPublico />} />
       </Routes>
     );
   }
@@ -118,10 +124,13 @@ function App() {
           <Route path="/sistema/presupuestos/nuevo" element={<ProtectedRoute requiere="editor"> <PresupuestoForm /> </ProtectedRoute>} />
           <Route path="/sistema/presupuestos/:id" element={<ProtectedRoute requiere="editor"> <PresupuestoForm /> </ProtectedRoute>} />
           <Route path="/sistema/catalogo" element={<ProtectedRoute requiere="editor"> <Catalogo /> </ProtectedRoute>} />
-          {/* La ruta vieja quedo en links y marcadores; no la rompemos. */}
-          <Route path="/sistema/facturacion" element={<Navigate to="/sistema/presupuestos" replace />} />
+          {/* Antes redirigia a presupuestos porque la facturacion no
+              existia. Ahora es el listado de facturas emitidas. */}
+          <Route path="/sistema/facturacion" element={<ProtectedRoute requiere="editor"> <Facturas /> </ProtectedRoute>} />
 
           <Route path="/sistema/reparaciones" element={<ProtectedRoute> <Reparaciones /> </ProtectedRoute>} />
+          <Route path="/sistema/reparaciones/:id" element={<ProtectedRoute> <ReparacionDetalle /> </ProtectedRoute>} />
+          <Route path="/sistema/remitos/:id" element={<ProtectedRoute requiere="editor"> <RemitoForm /> </ProtectedRoute>} />
           <Route path="/sistema/clientes" element={<ProtectedRoute> <Clientes /> </ProtectedRoute>} />
           <Route path="/sistema/informes" element={<ProtectedRoute> <ComingSoon title="Informes y Estadísticas" /> </ProtectedRoute>} />
 
