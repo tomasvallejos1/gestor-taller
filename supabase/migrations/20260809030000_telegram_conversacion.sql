@@ -29,6 +29,7 @@ alter table public.telegram_conversacion enable row level security;
 
 revoke all on public.telegram_conversacion from public, anon, authenticated;
 
+
 -- Una charla abandonada a la mitad no puede quedar viva para siempre: si
 -- alguien empieza un presupuesto, se distrae y vuelve tres dias despues,
 -- retomar en "¿cuantas unidades?" sin contexto es peor que arrancar de

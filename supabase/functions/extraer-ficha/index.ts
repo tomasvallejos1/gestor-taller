@@ -50,20 +50,9 @@ Deno.serve(async (req) => {
   const autorizacion = req.headers.get('Authorization');
   if (!autorizacion) return responder({ error: 'Falta autorizacion.' }, 401);
 
-  const comoUsuario = createClient(url, anon, {
-    global: { headers: { Authorization: autorizacion } },
-  });
+  const admin = createClient(url, servicio);
 
-  const { data: { user } } = await comoUsuario.auth.getUser();
-  if (!user) return responder({ error: 'Sesion invalida o vencida.' }, 401);
-
-  // Cargar una ficha es escribir: lo permite editor o super.
-  const { data: rol } = await comoUsuario.rpc('rol_actual');
-  if (rol !== 'super' && rol !== 'editor') {
-    return responder({ error: 'Tu perfil no puede cargar fichas.' }, 403);
-  }
-
-  let cuerpo: { extraccion_id?: string };
+  let cuerpo: { extraccion_id?: string; usuario_id?: string };
   try {
     cuerpo = await req.json();
   } catch {
@@ -73,9 +62,39 @@ Deno.serve(async (req) => {
   const id = cuerpo.extraccion_id;
   if (!id) return responder({ error: 'Falta extraccion_id.' }, 400);
 
-  const admin = createClient(url, servicio);
+  /**
+   * Misma puerta interna que presupuesto-pdf: la service_role no sale
+   * nunca del backend, asi que presentarla ya prueba que es codigo
+   * nuestro. El bot de Telegram no tiene sesion de usuario, y ya resolvio
+   * el permiso (telegram_id -> perfil -> rol) antes de llegar aca, asi
+   * que manda el id de quien carga en el cuerpo en vez de en un JWT.
+   */
+  const interno = autorizacion === `Bearer ${servicio}`;
+  let usuarioId: string;
+  let esSuper = false;
 
-  const { data: usadas } = await comoUsuario.rpc('extracciones_hoy', { p_usuario: user.id });
+  if (interno) {
+    if (!cuerpo.usuario_id) return responder({ error: 'Falta usuario_id.' }, 400);
+    usuarioId = cuerpo.usuario_id;
+    // El permiso (editor/super) ya lo resolvio el bot antes de crear la
+    // fila y de llamar aca. No hay sesion de la que volver a sacarlo.
+  } else {
+    const comoUsuario = createClient(url, anon, {
+      global: { headers: { Authorization: autorizacion } },
+    });
+    const { data: { user } } = await comoUsuario.auth.getUser();
+    if (!user) return responder({ error: 'Sesion invalida o vencida.' }, 401);
+
+    // Cargar una ficha es escribir: lo permite editor o super.
+    const { data: rol } = await comoUsuario.rpc('rol_actual');
+    if (rol !== 'super' && rol !== 'editor') {
+      return responder({ error: 'Tu perfil no puede cargar fichas.' }, 403);
+    }
+    usuarioId = user.id;
+    esSuper = rol === 'super';
+  }
+
+  const { data: usadas } = await admin.rpc('extracciones_hoy', { p_usuario: usuarioId });
   if ((usadas ?? 0) > LIMITE_DIARIO) {
     return responder({
       error: `Llegaste al limite de ${LIMITE_DIARIO} fichas por dia. `
@@ -91,7 +110,9 @@ Deno.serve(async (req) => {
 
   if (errorFila || !extraccion) return responder({ error: 'No existe esa extraccion.' }, 404);
 
-  if (extraccion.creado_por !== user.id && rol !== 'super') {
+  // Llamada interna: la fila la acaba de crear este mismo bot, con
+  // creado_por = usuarioId. No hay otro usuario del que protegerla.
+  if (!interno && extraccion.creado_por !== usuarioId && !esSuper) {
     return responder({ error: 'Esa extraccion es de otro usuario.' }, 403);
   }
 

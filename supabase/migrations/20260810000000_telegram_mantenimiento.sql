@@ -41,6 +41,7 @@ select cron.schedule(
   $$select public.limpiar_telegram_updates_viejos()$$
 );
 
+
 -- ============================================================
 --  Deteccion de clientes parecidos
 -- ============================================================

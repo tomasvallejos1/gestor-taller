@@ -119,6 +119,40 @@ describe('parsearAlambre', () => {
     assert.equal(r.kg, 1.08);
   });
 
+  // Los de abajo llegan SIN el ⌀ a proposito. El modelo devuelve el
+  // simbolo como etiqueta ({etiqueta: "∅", valor: "0,70 KG 1,080"}), asi
+  // que la funcion nunca lo ve. Escribir el ⌀ en el test le daba una
+  // pista que la ficha real no trae, y por eso el caso invertido pasaba
+  // en verde mientras se guardaba mal.
+  test('sin ⌀: con un numero de cada lado del KG, el peso es el de la derecha', () => {
+    const r = parsearAlambre('0,70 KG 1,080');
+    assert.equal(r.mm, 0.7, 'el calibre es el numero anterior al KG');
+    assert.equal(r.kg, 1.08, 'el peso es el posterior');
+  });
+
+  test('sin ⌀: con el peso a la izquierda y nada a la derecha', () => {
+    const r = parsearAlambre('0,35 mm 0,300 KG');
+    assert.equal(r.mm, 0.35);
+    assert.equal(r.kg, 0.3);
+  });
+
+  test('sin ⌀: hilos en paralelo', () => {
+    const r = parsearAlambre('2x0,45 mm 0,750 KG');
+    assert.equal(r.mm, 0.45);
+    assert.equal(r.hilos, 2);
+    assert.equal(r.kg, 0.75);
+  });
+
+  test('un calibre de bobinado nunca pesa mas que un rollo entero', () => {
+    // Red de seguridad contra la inversion: el diametro de un alambre de
+    // bobinado esta entre 0,1 y 3 mm. Si sale 1,08 "mm" con 0,70 "kg",
+    // los numeros se cambiaron de lugar.
+    for (const t of ['0,70 KG 1,080', '⌀ 0,70 KG 1,080', '0,35 mm 0,300 KG']) {
+      const r = parsearAlambre(t);
+      assert.ok(r.mm > 0 && r.mm <= 3, `${t}: ${r.mm}mm no es un calibre de alambre`);
+    }
+  });
+
   test('ficha C trabajo: "2x" son dos hilos en paralelo', () => {
     const r = parsearAlambre('⌀ 2x0,45 mm   0,750 KG');
     assert.equal(r.mm, 0.45, 'el diametro es de CADA hilo');

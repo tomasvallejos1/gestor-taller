@@ -12,6 +12,11 @@ import assert from 'node:assert/strict';
 import {
   campoDeEtiqueta, bobinadoDeEtiqueta, aislacionDeEtiqueta, mapearLineas, normalizar,
 } from './mapeo-ficha.js';
+// El set de regresion del final cruza mapeo con parseo a proposito: lo
+// que importa es el dato que termina en el formulario, no el paso
+// intermedio. Cada uno por su lado pasaba en verde mientras la ficha
+// real se guardaba mal.
+import { parsearAlambre, parsearAbertura, armarSecciones } from './parseo.js';
 
 describe('normalizar', () => {
   test('saca tildes, signos y mayusculas', () => {
@@ -229,5 +234,88 @@ describe('aislaciones', () => {
     ]);
     assert.equal(r.aislaciones[0].largo_mm_confianza, 'baja');
     assert.equal(r.aislaciones[0].largo_mm_fuente, 'AISL. LARGO 60');
+  });
+});
+
+/**
+ * Set de regresion: dos fichas reales, con lo que el modelo devolvio de
+ * verdad y lo que dice el papel, verificado a mano por el taller.
+ *
+ * Los renglones son copia literal de datos_json, sin retoques. La
+ * tentacion es escribirlos "prolijos" --agregarle el ⌀ a la etiqueta,
+ * sacarle el punto de mas al KG-- y ahi el test deja de probar lo que
+ * pasa y pasa a probar lo que uno cree que pasa. Los tres bugs que se
+ * arreglaron aca vivian justamente en esa diferencia.
+ */
+describe('fichas reales del taller', () => {
+  const L = (seccion, etiqueta, valor) => ({
+    seccion, etiqueta, valor, confianza: 'alta', texto_fuente: valor,
+  });
+
+  describe('bombeador de Juan', () => {
+    const leido = mapearLineas([
+      L('general', 'MOTOR', 'BOMBEADOR'), L('general', 'Cliente', 'JUAN'),
+      L('general', 'RANURAS', '32'), L('general', 'Largo', '62'),
+      L('general', 'Diam', '93 mm'), L('general', 'EXT.', '165mm'),
+      L('arranque', '∅', '0,60 k'),
+      L('arranque', 'Paso', '4 - 6 - 8'), L('arranque', 'Vtas', '20.20-37'),
+      L('trabajo', '∅', '0,70 KG 1,080'), L('trabajo', 'ABERT.', '54 mm 2 3/4'),
+      L('trabajo', 'Paso', '4 - 6 - 8'), L('trabajo', 'Vtas', '80-80-90'),
+    ]);
+
+    test('el ⌀ es la etiqueta del alambre, no un renglon perdido', () => {
+      assert.deepEqual(leido.sinReconocer, [], 'no puede quedar nada sin ubicar');
+      assert.ok(leido.circuitos.arranque.alambre, 'el arranque quedo sin alambre');
+      assert.ok(leido.circuitos.trabajo.alambre, 'el trabajo quedo sin alambre');
+    });
+
+    test('trabajo: 0,70mm y 1,080kg, en ese orden', () => {
+      const a = parsearAlambre(leido.circuitos.trabajo.alambre);
+      assert.equal(a.mm, 0.7, 'el calibre');
+      assert.equal(a.kg, 1.08, 'el peso');
+    });
+
+    test('trabajo: la relacion es de tres terminos', () => {
+      const ab = parsearAbertura(leido.circuitos.trabajo.abertura);
+      assert.equal(ab.mm, 54);
+      assert.equal(ab.fraccion, '2/3/4', 'se perdia el primer termino');
+    });
+
+    test('el punto entre vueltas separa, no decimaliza', () => {
+      const s = armarSecciones(leido.circuitos.arranque.paso, leido.circuitos.arranque.vueltas);
+      assert.equal(s.alineado, true);
+      assert.deepEqual(s.secciones.map((x) => x.vueltas), [20, 20, 37]);
+    });
+  });
+
+  describe('batidor de Magneri', () => {
+    const leido = mapearLineas([
+      L('general', 'Motor', 'BATIDOR'), L('general', 'Cliente', 'PABLO MAGNERI'),
+      L('general', 'RANURAS', '24'), L('general', 'Largo', '45'),
+      L('general', 'Diam', '73 mm 124 mm'), L('general', 'CONDENSADOR', '8 MF'),
+      L('general', 'RPM', '1450 RPM.'),
+      L('arranque', '∅', '0,35 mm - 0,300 KG'),
+      L('arranque', 'Paso', '6'), L('arranque', 'VTAS', '300'),
+      L('trabajo', '∅', '0,50 mm - 0,550 KG.'),
+      L('trabajo', 'PASO', '4 - 6'), L('trabajo', 'VTAS', '150 . 150'),
+    ]);
+
+    test('los dos diametros de un mismo renglon van a campos distintos', () => {
+      assert.equal(leido.campos.diam_int_mm, '73', 'el menor es el interior');
+      assert.equal(leido.campos.diam_ext_mm, '124', 'el mayor es el exterior');
+      assert.equal(leido.confianza.diam_ext_mm, 'media', 'lo dedujimos nosotros');
+    });
+
+    test('arranque: 0,35mm y 0,300kg', () => {
+      const a = parsearAlambre(leido.circuitos.arranque.alambre);
+      assert.equal(a.mm, 0.35);
+      assert.equal(a.kg, 0.3);
+    });
+
+    test('un punto detras del KG no se lleva puesto el peso', () => {
+      const a = parsearAlambre(leido.circuitos.trabajo.alambre);
+      assert.equal(a.mm, 0.5);
+      assert.equal(a.kg, 0.55, '"0,550 KG." con punto final daba null');
+    });
   });
 });

@@ -41,7 +41,6 @@ end;
 $$;
 
 drop trigger if exists perfil_proteger_telegram_id on public.perfil;
-
 create trigger perfil_proteger_telegram_id
   before update on public.perfil
   for each row

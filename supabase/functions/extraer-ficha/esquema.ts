@@ -99,6 +99,13 @@ COMO SE ESCRIBEN LOS NUMEROS EN ESTAS FICHAS
    "0,40 mm   0,320 KG" va entero en una sola linea con etiqueta "Alambre".
    "38mm (2/3)" va entero con etiqueta "ABERT.".
 
+6. LEIDO A MEDIAS: si de un valor solo alcanzas a leer una parte --se corta,
+   lo tapa un doblez, se va del borde-- transcribi lo que ves y poné
+   confianza "baja". Nunca "alta" sobre algo leido a medias.
+   Ojo con el alambre: la linea del ⌀ normalmente trae DOS numeros, el
+   calibre y el peso en KG. Si ves uno solo, o ves el rotulo "KG" suelto sin
+   su numero, es que falta algo: confianza "baja".
+
 QUE MIRAR
 - Arriba a la izquierda suele estar el motor. Arriba a la derecha, el nombre
   del cliente: si ves un nombre de persona, usá etiqueta "Cliente".
@@ -108,6 +115,14 @@ QUE MIRAR
   Puede haber VARIAS (fondo de ranura, cuña, entre fases). Transcribilas
   todas, una linea por medida, en el orden en que aparecen: repetí las
   mismas etiquetas para cada croquis en vez de quedarte con uno solo.
+
+  Un croquis trae tres numeros, tipo "40 x 78 x 24". Los DOS que llevan mm
+  son las medidas del recorte de papel aislante; el que va SIN unidad es
+  cuantas piezas se cortan. O sea que en "40mm x 78mm x 24", el 24 es la
+  cantidad, no una medida.
+  Si no podes distinguir cual medida es el largo y cual el ancho, transcribi
+  igual y poné confianza "media" en las dos: entre adivinar y decir que
+  estas seguro, decir que dudas.
 - Un campo preimpreso vacio ("AMP:" sin nada al lado) NO se incluye.
 
 CONFIANZA

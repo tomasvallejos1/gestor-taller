@@ -1,10 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>client</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2c5f8f" />
+    <title>Bobinados David</title>
+
+    <!--
+      vite-plugin-pwa inyecta el manifest.webmanifest solo. Lo que sigue
+      es lo que el manifest NO cubre: Safari en iOS no lo lee para nada
+      de esto, y usa en cambio estas etiquetas propias de Apple.
+    -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- El status bar transparente combina con el padding de
+         safe-area-inset que ya tiene la barra inferior en index.css. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Bobinados" />
   </head>
   <body>
     <script>

@@ -1,9 +1,16 @@
 /**
- * Consultas de motores contra Supabase.
+ * Acceso a datos de motores, compartido entre la web y el bot.
  *
- * Reciben el cliente como primer parametro en vez de importarlo: lo usan
- * tanto la web (con el cliente logueado del navegador) como el bot de
- * Telegram (con el cliente de service role), y cada uno arma el suyo.
+ * Cada funcion recibe el cliente de Supabase como primer argumento en vez
+ * de importarlo. Es lo unico que hace falta para que el mismo codigo corra
+ * en el navegador --con la sesion del usuario y sus policies-- y adentro
+ * de una Edge Function en Deno, donde el cliente se arma por request.
+ *
+ * La alternativa era que el bot escribiera sus propias consultas. Con dos
+ * implementaciones, un filtro nuevo o un cambio de columna hay que
+ * acordarse de hacerlo en los dos lados; el dia que alguien se olvide, la
+ * web y el bot muestran fichas distintas del mismo motor y nadie sabe cual
+ * creer.
  */
 
 const COLUMNAS_LISTA = `
@@ -19,17 +26,18 @@ const COLUMNAS_LISTA = `
  * pocas fichas daba igual; con las del taller entero, es bajar la base
  * completa a un celular en cada visita a la pantalla.
  *
+ * @param {object} cliente cliente de Supabase ya autenticado
  * @param {{nro?: string, texto?: string, marca?: string, modelo?: string,
  *          hp?: string, tipo?: string, orden?: string,
  *          pagina?: number, porPagina?: number}} filtros
  */
-export async function listarMotores(supabase, filtros = {}) {
+export async function listarMotores(cliente, filtros = {}) {
   const {
     nro, texto, marca, modelo, hp, tipo,
     orden = 'recientes', pagina = 0, porPagina = 50,
   } = filtros;
 
-  let q = supabase.from('motor').select(COLUMNAS_LISTA, { count: 'exact' });
+  let q = cliente.from('motor').select(COLUMNAS_LISTA, { count: 'exact' });
 
   if (nro) {
     const n = Number(String(nro).replace(/\D/g, ''));
@@ -80,8 +88,8 @@ export async function listarMotores(supabase, filtros = {}) {
  * Ficha completa (motor + circuitos + secciones + fotos) en un viaje.
  * Acepta uuid o numero de ficha: la app vieja linkeaba por nroMotor.
  */
-export async function obtenerMotor(supabase, nroOId) {
-  const { data, error } = await supabase.rpc('motor_completo', {
+export async function obtenerMotor(cliente, nroOId) {
+  const { data, error } = await cliente.rpc('motor_completo', {
     p_nro_o_id: String(nroOId),
   });
   if (error) throw error;
@@ -92,16 +100,16 @@ export async function obtenerMotor(supabase, nroOId) {
  * Alta o edicion. Todo en una transaccion del lado de Postgres: o se
  * guarda el motor con su bobinado completo, o no se guarda nada.
  */
-export async function guardarMotor(supabase, datos) {
-  const { data, error } = await supabase.rpc('guardar_motor_completo', {
+export async function guardarMotor(cliente, datos) {
+  const { data, error } = await cliente.rpc('guardar_motor_completo', {
     p_datos: datos,
   });
   if (error) throw error;
   return data; // uuid del motor
 }
 
-export async function eliminarMotor(supabase, id) {
-  const { error } = await supabase.from('motor').delete().eq('id', id);
+export async function eliminarMotor(cliente, id) {
+  const { error } = await cliente.from('motor').delete().eq('id', id);
   if (error) throw error;
 }
 

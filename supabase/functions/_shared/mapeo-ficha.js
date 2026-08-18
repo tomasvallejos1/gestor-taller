@@ -92,8 +92,26 @@ function buscar(tabla, etiqueta) {
   return null;
 }
 
+/**
+ * El simbolo de diametro, en todas las formas en que aparece.
+ *
+ * En el bloque de bobinado la ficha no escribe "alambre": escribe "⌀" y
+ * al lado el calibre y el peso. Hay que atajarlo ANTES de normalizar,
+ * porque normalizar() borra todo lo que no sea letra o numero y deja el
+ * simbolo en cadena vacia; buscar() corta ahi con `if (!n) return null`
+ * y el renglon entero cae en "sin reconocer".
+ *
+ * Costaba las cuatro medidas de alambre de cada ficha --calibre y peso,
+ * de arranque y de trabajo-- sin que nada lo avisara: el circuito
+ * quedaba vacio y los renglones aparecian al pie como "no supimos
+ * ubicar esto", que es facil de pasar por alto.
+ */
+const SIMBOLO_DIAMETRO = /[∅ØøΦφ⌀]/;
+
 export const campoDeEtiqueta = (e) => buscar(SINONIMOS, e);
-export const bobinadoDeEtiqueta = (e) => buscar(BOBINADO, e);
+export const bobinadoDeEtiqueta = (e) => (
+  SIMBOLO_DIAMETRO.test(String(e ?? '')) ? 'alambre' : buscar(BOBINADO, e)
+);
 export const aislacionDeEtiqueta = (e) => buscar(AISLACION, e);
 
 /**
@@ -232,6 +250,32 @@ export function mapearLineas(lineas = []) {
     }
 
     sinReconocer.push({ seccion, etiqueta, valor: String(valor), texto_fuente: txt });
+  }
+
+  // Las dos medidas de diametro en un solo renglon.
+  //
+  // La ficha las escribe juntas ("Diam: INT 73mm EXT 124mm") y el modelo
+  // devuelve el renglon entero como el interior: "73 mm 124 mm". El
+  // exterior quedaba adentro de ese texto y no llegaba nunca a su campo.
+  //
+  // Cual es cual no se decide por el orden sino por el tamaño: el
+  // diametro interior de un estator es siempre menor que el exterior.
+  if (campos.diam_int_mm && !campos.diam_ext_mm) {
+    const medidas = String(campos.diam_int_mm).match(/\d[\d.,]*/g) ?? [];
+    if (medidas.length === 2) {
+      const [a, b] = medidas.map((m) => Number(String(m).replace(',', '.')));
+      if (Number.isFinite(a) && Number.isFinite(b) && a !== b) {
+        const original = campos.diam_int_mm;
+        campos.diam_int_mm = String(Math.min(a, b));
+        campos.diam_ext_mm = String(Math.max(a, b));
+        // Confianza media: la separacion la dedujimos nosotros, no la
+        // leyo el modelo, y eso hay que mostrarlo en la revision.
+        confianza.diam_int_mm = 'media';
+        confianza.diam_ext_mm = 'media';
+        fuente.diam_int_mm = original;
+        fuente.diam_ext_mm = original;
+      }
+    }
   }
 
   return { campos, confianza, fuente, circuitos, aislaciones, sinReconocer };

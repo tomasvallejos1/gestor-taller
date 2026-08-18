@@ -21,6 +21,7 @@ create unique index if not exists perfil_telegram_id_unico
   on public.perfil (telegram_id)
   where telegram_id is not null;
 
+
 /**
  * Genera el codigo para el usuario de la sesion.
  * Se llama desde Ajustes, con la sesion del navegador.
@@ -50,6 +51,7 @@ end;
 $$;
 
 grant execute on function public.generar_codigo_telegram() to authenticated;
+
 
 /**
  * Cierra el vinculo. La llama el bot con service_role: del lado de
@@ -86,6 +88,7 @@ $$;
 
 revoke execute on function public.vincular_telegram(text, bigint) from public, anon, authenticated;
 
+
 -- ---------- Idempotencia de los updates ----------
 --
 -- Telegram reintenta el envio si el webhook no responde 200 rapido. Sin
@@ -98,7 +101,6 @@ create table if not exists public.telegram_update (
 );
 
 alter table public.telegram_update enable row level security;
-
 -- Sin policies: solo service_role entra, y service_role no pasa por RLS.
 
 comment on table public.telegram_update is

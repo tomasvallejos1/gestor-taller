@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+# Service worker de npm run dev (devOptions.enabled en vite.config.js).
+# Se regenera solo; no tiene sentido versionarlo.
+dev-dist
 *.local
 
 # Editor directories and files
