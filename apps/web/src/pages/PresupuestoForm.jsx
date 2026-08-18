@@ -512,19 +512,35 @@ const PresupuestoForm = () => {
         </Alert>
       )}
 
-      <div style={{ display: 'flex', gap: '9px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-        {presupuesto.id && (
-          <>
+      {/* Compartir y descargar son de despues de guardar: quedan en el
+          flujo. La barra fija carga solo con el guardar. */}
+      {presupuesto.id && (
+        <div className="seccion">
+          <div className="seccion__cab">
+            <Share2 size={17} />
+            <div>
+              <h3 className="seccion__titulo">Enviar al cliente</h3>
+              <p className="seccion__ayuda">El PDF y el link salen con lo ultimo que guardaste.</p>
+            </div>
+          </div>
+          <div className="acciones" style={{ marginTop: 0 }}>
             <button type="button" onClick={copiarLink} className="btn btn-secondary">
               {copiado ? <Check size={15} /> : <Share2 size={15} />}
               {copiado ? 'Link copiado' : 'Copiar link'}
             </button>
             <Button variant="secondary" onClick={descargarPdf} isLoading={generandoPdf}>
-              <FileDown size={15} /> PDF
+              <FileDown size={15} /> Ver PDF
             </Button>
-          </>
-        )}
-        <Button variant="primary" size="lg" onClick={guardar} isLoading={guardando}>
+          </div>
+        </div>
+      )}
+
+      {/* Barra fija en el celular: un presupuesto de seis renglones mide
+          dos pantallas y media, y con el boton al final hay que bajar
+          hasta el fondo cada vez que se toca algo del medio. */}
+      <div className="barra-guardar">
+        <Button variant="primary" size="lg" onClick={guardar} isLoading={guardando}
+          className="barra-guardar__principal">
           <Save size={16} /> Guardar
         </Button>
       </div>

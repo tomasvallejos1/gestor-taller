@@ -62,6 +62,10 @@
   --gradient-dark: #131a24;
   --gradient-soft: linear-gradient(180deg, #fbfcfd 0%, #f4f6f9 100%);
   --sidebar-width: 270px;
+  /* Alto de la barra de navegacion de abajo en el celular: 8px de
+     padding + 54px del item + 8px + 10px del borde inferior. Lo usa
+     .barra-guardar para apoyarse justo encima y no quedar tapada. */
+  --alto-barra-mobile: 80px;
 }
 
 body.dark-mode {
@@ -502,6 +506,17 @@ textarea[readonly] {
   transition: background-color 0.25s ease;
 }
 
+/* En un monitor de 1920 el contenido quedaba de 1620px de ancho: un
+   formulario de dos columnas se estiraba hasta separar la etiqueta de
+   su campo medio metro, y una lista era una linea de texto larguisima.
+   A partir de cierto ancho se deja de crecer y se centra. */
+@media (min-width: 1600px) {
+  .system-content {
+    padding-left: max(30px, calc((100% - 1240px) / 2));
+    padding-right: max(30px, calc((100% - 1240px) / 2));
+  }
+}
+
 .public-content {
   margin-left: 0;
   width: 100%;
@@ -815,7 +830,13 @@ textarea[readonly] {
        entera y no se ve. */
     isolation: isolate;
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    /* `auto-fit` y no un numero fijo de columnas: con repeat(4, 1fr)
+       escrito a mano, sumar un quinto destino lo mandaba en silencio a
+       una segunda fila --la barra se veia partida al pie de la
+       pantalla-- y nada en el CSS avisaba por que. Asi el reparto sale
+       de cuantos items haya. */
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
     gap: 4px;
     padding: 8px 8px;
     /* Radio grande y casi tan alto como la mitad de la barra: es lo
@@ -1207,6 +1228,9 @@ body.dark-mode .barra-mobile-item.activo::before {
   display: none;
 }
 
+/* 36px alcanza con el mouse. En el celular los chips van en una fila
+   que scrollea de costado, asi que el dedo llega en diagonal y erra
+   seguido: ahi suben a 42px (ver el media query del final). */
 .chip {
   flex-shrink: 0;
   padding: 7px 14px;
@@ -1395,11 +1419,14 @@ button.fila-link {
   position: relative;
 }
 
+/* 44px y no 40: es el minimo con el que el dedo acierta sin mirar, y
+   este boton convive con el enlace de la fila --si se falla, en vez
+   de abrir el menu se navega a otra pantalla--. */
 .menu-acciones__boton {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 9px;
   background: none;
@@ -1524,6 +1551,576 @@ button.fila-link {
   .menu-acciones__panel,
   .panel-filtros {
     animation: none;
+  }
+}
+
+
+/* =========================================================
+   Pantallas de detalle
+
+   Una orden de reparacion se abre parado al lado del banco, con
+   el motor adelante. Lo que se necesita ahi es distinto de lo
+   que necesita un listado: leer cuatro datos de un vistazo y
+   apretar UNA cosa. De ahi las tres piezas de abajo.
+   ========================================================= */
+
+/* --------- Accion principal ("paso siguiente") --------- */
+/*
+   El estado de una orden avanza casi siempre al casillero de al
+   lado: ingresado -> en proceso -> terminado -> entregado. Tener
+   que abrir un <select> de seis opciones y elegir la que sigue
+   son tres toques para lo que se hace veinte veces por dia.
+   Este boton hace ese salto solo, y el <select> queda para el
+   caso raro (cancelar, o volver atras).
+*/
+.paso {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 18px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--gradient-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-medio);
+}
+
+.paso:active {
+  transform: translateY(1px);
+}
+
+.paso:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+.paso__hint {
+  margin-top: 7px;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  text-align: center;
+}
+
+/* --------- Datos de solo lectura --------- */
+/*
+   Pares etiqueta/valor. `auto-fit` y no dos columnas fijas: en
+   375px entra una sola y en el escritorio entran tres sin repetir
+   el bloque en un media query.
+*/
+.datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 18px;
+}
+
+.dato__label {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.dato__valor {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.dato__valor--vacio {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* --------- Seccion dentro de una pantalla --------- */
+
+.seccion {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.seccion__cab {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.seccion__cab > svg {
+  flex-shrink: 0;
+  color: var(--text-light);
+}
+
+.seccion__titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.seccion__ayuda {
+  margin: 2px 0 0;
+  font-size: 0.83rem;
+  color: var(--text-light);
+}
+
+/* --------- Tarjeta de documento (presupuesto, remito, factura) --------- */
+/*
+   Las tres se ven igual a proposito: son el mismo objeto en tres
+   momentos distintos del trabajo, y que compartan forma es lo que
+   deja entender de un vistazo por donde va la orden.
+*/
+.doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.doc--vacio {
+  border-style: dashed;
+  background: none;
+}
+
+.doc__icono {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.doc--vacio .doc__icono {
+  background: var(--bg-muted);
+  color: var(--text-light);
+}
+
+.doc__cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc__titulo {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.doc__sub {
+  margin-top: 2px;
+  font-size: 0.83rem;
+  color: var(--text-light);
+  overflow-wrap: anywhere;
+}
+
+/* --------- Grupo de acciones --------- */
+/*
+   En el celular tres botones en fila entran a 95px cada uno y el
+   texto se parte en dos renglones. Apilados ocupan mas alto pero
+   se aciertan con el pulgar sin mirar. En el escritorio, donde
+   sobra ancho, vuelven a la fila.
+*/
+.acciones {
+  display: grid;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.acciones > * {
+  width: 100%;
+  justify-content: center;
+}
+
+@media (min-width: 600px) {
+  .acciones {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .acciones > * {
+    width: auto;
+  }
+}
+
+/* Acciones que van pegadas al titulo de una seccion y no abajo. */
+.seccion__cab .acciones {
+  margin-top: 0;
+  margin-left: auto;
+}
+
+/* --------- Barra de guardado fija --------- */
+/*
+   Un presupuesto de seis renglones mide dos pantallas y media.
+   Con el boton al final, guardar obliga a scrollear hasta abajo
+   cada vez --y el que edita un renglon del medio no sabe si lo
+   que toco quedo guardado--. Fijada abajo, la accion esta
+   siempre a un pulgar de distancia.
+
+   Solo en el celular: en el escritorio la pagina entera se ve de
+   una y una barra flotante ahi es ruido.
+*/
+.barra-guardar {
+  display: flex;
+  gap: 9px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+@media (max-width: 767px) {
+  .barra-guardar {
+    position: sticky;
+    /* Justo encima de la barra de navegacion de abajo. */
+    bottom: calc(var(--alto-barra-mobile, 80px) + env(safe-area-inset-bottom, 0px));
+    z-index: 20;
+    /* Flota como tarjeta en vez de sangrar a los bordes: asi no
+       necesita saber cuanto padding tiene el contenedor, y sirve
+       igual suelta en la pagina que adentro de un .ui-card. */
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-strong);
+  }
+
+  .barra-guardar > * {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* La accion principal manda: ocupa el renglon entero arriba de
+     las secundarias en vez de quedar apretada entre dos. */
+  .barra-guardar > .barra-guardar__principal {
+    flex-basis: 100%;
+    order: -1;
+  }
+}
+
+body.dark-mode .barra-guardar {
+  box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* Ver el comentario de .chip: con el dedo hace falta mas alto. */
+@media (max-width: 767px) {
+  .chip {
+    min-height: 42px;
+    padding: 9px 16px;
+  }
+}
+
+/* En el celular el titulo y su accion no entran en una fila: el
+   boton queda de 70px y el titulo cortado. Se apilan, y la accion
+   toma el ancho para ser el objetivo grande de la pantalla. */
+@media (max-width: 480px) {
+  .pantalla-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pantalla-header > .btn,
+  .pantalla-header > a.btn {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   Consulta publica de estado (/estado)
+
+   La abre el cliente desde el celular, casi siempre parado en
+   la vereda del taller o mientras habla por telefono. No tiene
+   sesion, no conoce la app y no va a volver a usarla: todo
+   tiene que entenderse sin leer nada.
+   ========================================================= */
+
+.estado-caja {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: 42px 18px 60px;
+}
+
+.estado-intro {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.estado-intro h2 {
+  font-size: 1.7rem;
+  margin: 0 0 8px;
+}
+
+.estado-intro p {
+  margin: 0;
+  color: var(--text-light);
+}
+
+.estado-form {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-medio);
+}
+
+/* Los dos campos van uno arriba del otro y no en fila: en 375px
+   "N° de orden" y "Apellido" lado a lado dan 160px cada uno, y el
+   placeholder queda cortado a la mitad. */
+.estado-form .ui-input {
+  width: 100%;
+}
+
+.estado-tarjeta {
+  margin-top: 22px;
+  padding: 24px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-medio);
+}
+
+.estado-tarjeta__cab {
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.estado-badge {
+  display: inline-block;
+  padding: 5px 13px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--accent-tint);
+  color: var(--accent);
+}
+
+.estado-badge--cancelado {
+  background: rgba(180, 35, 24, 0.12);
+  color: var(--danger);
+}
+
+.estado-orden {
+  margin: 12px 0 0;
+  font-size: 1.25rem;
+}
+
+/* --------- Linea de tiempo --------- */
+
+.hito {
+  display: flex;
+  gap: 15px;
+  padding-left: 20px;
+  position: relative;
+  padding-bottom: 22px;
+  border-left: 2px solid var(--border);
+}
+
+.hito:last-child {
+  border-left-color: transparent;
+  padding-bottom: 0;
+}
+
+.hito--hecho {
+  border-left-color: var(--accent);
+}
+
+.hito__punto {
+  position: absolute;
+  left: -7px;
+  top: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--border-fuerte);
+}
+
+.hito--hecho .hito__punto,
+.hito--actual .hito__punto {
+  background: var(--accent);
+}
+
+/* El paso en el que esta la orden ahora es lo unico que el cliente
+   vino a ver: se marca con un anillo ademas del color, para que se
+   distinga tambien sin distinguir colores. */
+.hito--actual .hito__punto {
+  box-shadow: 0 0 0 4px var(--accent-tint-strong);
+}
+
+.hito__fecha {
+  flex-shrink: 0;
+  min-width: 52px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.hito__texto {
+  color: var(--text-light);
+}
+
+.hito--hecho .hito__texto {
+  color: var(--text-main);
+}
+
+.hito--actual .hito__texto,
+.hito--actual .hito__fecha {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.estado-nota {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+}
+
+.estado-nota--listo {
+  background: rgba(6, 118, 71, 0.1);
+  color: var(--success);
+}
+
+.estado-nota--espera {
+  background: rgba(181, 71, 8, 0.1);
+  color: var(--warning);
+}
+
+.estado-nota > svg {
+  flex-shrink: 0;
+}
+
+/* Los documentos que el cliente puede abrir. Se ven como botones
+   grandes porque en el celular son el unico destino de la pagina. */
+.estado-doc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.estado-doc:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-tint);
+}
+
+.estado-doc > svg:first-child {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.estado-doc__flecha {
+  margin-left: auto;
+  color: var(--text-light);
+}
+
+
+/* =========================================================
+   Detalle de un comprobante publico (presupuesto / remito)
+
+   Estas paginas imitan un papel y por eso llevan la paleta
+   escrita a mano en vez de las variables del tema: el cliente
+   las abre desde WhatsApp y tienen que verse igual sin importar
+   si su telefono esta en modo oscuro.
+
+   La tabla de renglones es lo unico que no entra en 375px. En
+   vez de dejarla scrollear al costado --donde el importe, que
+   es lo que el cliente vino a mirar, queda fuera de pantalla--
+   cada renglon se apila y se etiqueta.
+   ========================================================= */
+
+@media (max-width: 520px) {
+  .doc-tabla,
+  .doc-tabla tbody,
+  .doc-tabla tr,
+  .doc-tabla td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Los encabezados de columna no sirven apilados: cada celda
+     lleva su propia etiqueta. */
+  .doc-tabla thead {
+    display: none;
+  }
+
+  .doc-tabla tr {
+    padding: 12px 0;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .doc-tabla td {
+    padding: 0;
+    border: none;
+    text-align: left !important;
+  }
+
+  /* La descripcion es el titulo del renglon. */
+  .doc-tabla td[data-etq='Descripcion'] {
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+
+  /* Cantidad y precio van juntos en una linea chica; el importe
+     abajo y resaltado. */
+  .doc-tabla td[data-etq='Cant.'],
+  .doc-tabla td[data-etq='P. unitario'] {
+    display: inline-block;
+    width: auto;
+    font-size: 0.85rem;
+    color: #64748b;
+  }
+
+  .doc-tabla td[data-etq='Cant.']::after {
+    content: ' ×';
+  }
+
+  .doc-tabla td[data-etq='P. unitario'] {
+    margin-left: 4px;
+  }
+
+  .doc-tabla td[data-etq='Importe'] {
+    margin-top: 4px;
+    font-weight: 700;
+  }
+
+  .doc-tabla td[data-etq='Importe']::before {
+    content: 'Importe: ';
+    font-weight: 400;
+    color: #64748b;
   }
 }
 

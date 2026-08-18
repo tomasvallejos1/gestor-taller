@@ -1,15 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, FileDown, Share2, Check, FileText, Truck, Receipt, Wrench,
+  ArrowLeft, FileDown, Share2, Check, FileText, Truck, Receipt,
+  ArrowRight, Wrench, User, Settings2,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
-import { useEsMobile } from '../lib/useMediaQuery';
 import {
-  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO,
+  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO, SIGUIENTE_ESTADO,
   obtenerReparacion, guardarReparacion, cambiarEstado,
 } from '../lib/reparaciones';
 import { pesos } from '../lib/presupuestos';
@@ -17,22 +17,49 @@ import * as remitos from '../lib/remitos';
 import * as facturas from '../lib/facturas';
 import { ETIQUETA_ESTADO_FACTURA, COLOR_ESTADO_FACTURA, letraFactura } from '../lib/facturas';
 
-const labelStyle = {
-  display: 'block', fontSize: '0.72rem', fontWeight: 700, marginBottom: '6px',
-  textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)',
-};
-const inputStyle = {
-  width: '100%', padding: '11px 13px', borderRadius: '9px', border: '1px solid var(--border)',
-  background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: '1rem', fontFamily: 'inherit',
-};
+/**
+ * Una orden de reparacion.
+ *
+ * Se abre parado al lado del banco, con el motor adelante, para hacer
+ * una de dos cosas: ver por donde va, o empujarla al paso siguiente.
+ * Por eso arriba de todo va el estado y el boton que lo avanza, y
+ * recien despues el detalle.
+ *
+ * Los tres documentos --presupuesto, remito, factura-- se dibujan
+ * iguales a proposito: son el mismo objeto en tres momentos del
+ * trabajo, y compartir forma es lo que deja ver de un vistazo hasta
+ * donde llego la orden.
+ */
 
 const comprobanteDe = (x) => `${String(x.punto_venta ?? 1).padStart(4, '0')}-${String(x.numero ?? 0).padStart(8, '0')}`;
+
+/** Un par etiqueta/valor, con el hueco marcado cuando no hay dato. */
+const Dato = ({ label, children, vacio }) => (
+  <div>
+    <span className="dato__label">{label}</span>
+    <div className={`dato__valor${vacio ? ' dato__valor--vacio' : ''}`}>{children}</div>
+  </div>
+);
+
+/** Tarjeta de documento. `acciones` solo se dibuja si hay algo que hacer. */
+const Doc = ({ icono, titulo, sub, hay, acciones }) => {
+  const Icono = icono;
+  return (
+    <div className={`doc${hay ? '' : ' doc--vacio'}`}>
+      <span className="doc__icono"><Icono size={18} /></span>
+      <div className="doc__cuerpo">
+        <div className="doc__titulo">{titulo}</div>
+        <div className="doc__sub">{sub}</div>
+      </div>
+      {acciones}
+    </div>
+  );
+};
 
 const ReparacionDetalle = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { esEditor } = useAuth();
-  const esMobile = useEsMobile();
 
   const [rep, setRep] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -41,6 +68,8 @@ const ReparacionDetalle = () => {
 
   const [diagnostico, setDiagnostico] = useState('');
   const [guardandoDiag, setGuardandoDiag] = useState(false);
+  const [avanzando, setAvanzando] = useState(false);
+  const [verEstados, setVerEstados] = useState(false);
 
   const [creandoRemito, setCreandoRemito] = useState(false);
   const [generandoPdfRemito, setGenerandoPdfRemito] = useState(false);
@@ -70,11 +99,15 @@ const ReparacionDetalle = () => {
 
   const cambiar = async (estado) => {
     setError('');
+    setAvanzando(true);
     try {
       await cambiarEstado(id, estado);
+      setVerEstados(false);
       await cargar();
     } catch (e) {
       setError(e.message ?? 'No se pudo cambiar el estado.');
+    } finally {
+      setAvanzando(false);
     }
   };
 
@@ -83,8 +116,8 @@ const ReparacionDetalle = () => {
     setError('');
     try {
       await guardarReparacion({ ...rep, diagnostico });
-      setAviso('Diagnostico guardado.');
       await cargar();
+      setAviso('Diagnostico guardado.');
     } catch (e) {
       setError(e.message ?? 'No se pudo guardar el diagnostico.');
     } finally {
@@ -92,96 +125,57 @@ const ReparacionDetalle = () => {
     }
   };
 
-  const crearRemito = async () => {
-    setCreandoRemito(true);
+  // Las acciones de abajo comparten forma: apagan el aviso viejo,
+  // corren, y refrescan. `cargar()` limpia `error` al empezar, asi que
+  // el mensaje de fallo se escribe DESPUES de refrescar o se borraria
+  // apenas se pinta.
+  const accion = (setLoading, fn, exito) => async () => {
+    setLoading(true);
     setError('');
+    setAviso('');
     try {
-      await remitos.crearDesdeReparacion(id, rep.presupuesto?.id ?? null);
+      const r = await fn();
       await cargar();
+      if (exito) setAviso(exito(r));
     } catch (e) {
-      setError(e.message ?? 'No se pudo crear el remito.');
+      await cargar();
+      setError(e.message ?? 'No se pudo completar la accion.');
     } finally {
-      setCreandoRemito(false);
+      setLoading(false);
     }
   };
 
-  const pdfRemito = async () => {
-    setGenerandoPdfRemito(true);
+  const crearRemito = accion(setCreandoRemito,
+    () => remitos.crearDesdeReparacion(id, rep.presupuesto?.id ?? null));
+
+  const crearFactura = accion(setCreandoFactura,
+    () => facturas.crearDesdeRemito(rep.remito.id));
+
+  const emitirFactura = accion(setEmitiendo,
+    () => facturas.emitir(rep.factura.id),
+    (r) => (r.ya_estaba ? 'Esta factura ya estaba autorizada.' : `Factura autorizada. CAE ${r.cae}.`));
+
+  const verificarFactura = accion(setVerificando,
+    () => facturas.reconciliar(rep.factura.id),
+    (r) => r.mensaje ?? (r.estado === 'autorizada' ? `Autorizada. CAE ${r.cae}.` : 'Todavia sin novedades.'));
+
+  const abrirPdf = async (setLoading, fn) => {
+    setLoading(true);
     setError('');
     try {
-      const { url } = await remitos.generarPdf(rep.remito.id);
+      const { url } = await fn();
       window.open(url, '_blank', 'noopener');
     } catch (e) {
       setError(e.message);
     } finally {
-      setGenerandoPdfRemito(false);
+      setLoading(false);
     }
   };
 
   const copiarLinkRemito = async () => {
-    const url = `${window.location.origin}/r/${rep.remito.token_publico}`;
-    await navigator.clipboard.writeText(url);
+    await navigator.clipboard.writeText(`${window.location.origin}/r/${rep.remito.token_publico}`);
     setCopiadoRemito(true);
     setTimeout(() => setCopiadoRemito(false), 2200);
-  };
-
-  const crearFactura = async () => {
-    setCreandoFactura(true);
-    setError('');
-    try {
-      await facturas.crearDesdeRemito(rep.remito.id);
-      await cargar();
-    } catch (e) {
-      setError(e.message ?? 'No se pudo preparar la factura.');
-    } finally {
-      setCreandoFactura(false);
-    }
-  };
-
-  const emitirFactura = async () => {
-    setEmitiendo(true);
-    setError('');
-    try {
-      const r = await facturas.emitir(rep.factura.id);
-      setAviso(r.ya_estaba ? 'Esta factura ya estaba autorizada.' : `Factura autorizada. CAE ${r.cae}.`);
-      await cargar();
-    } catch (e) {
-      // cargar() limpia `error` al empezar (para no arrastrar un error
-      // viejo a una carga nueva). Por eso se refresca ANTES de mostrar
-      // este: si el orden fuera al reves, el mensaje de ARCA desaparecia
-      // apenas se pintaba, tapado por el propio refresco.
-      await cargar();
-      setError(e.message ?? 'ARCA rechazo el comprobante.');
-    } finally {
-      setEmitiendo(false);
-    }
-  };
-
-  const verificarFactura = async () => {
-    setVerificando(true);
-    setError('');
-    try {
-      const r = await facturas.reconciliar(rep.factura.id);
-      setAviso(r.mensaje ?? (r.estado === 'autorizada' ? `Autorizada. CAE ${r.cae}.` : 'Todavia sin novedades.'));
-      await cargar();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setVerificando(false);
-    }
-  };
-
-  const pdfFactura = async () => {
-    setGenerandoPdfFactura(true);
-    setError('');
-    try {
-      const { url } = await facturas.generarPdf(rep.factura.id);
-      window.open(url, '_blank', 'noopener');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setGenerandoPdfFactura(false);
-    }
   };
 
   if (cargando) {
@@ -191,28 +185,33 @@ const ReparacionDetalle = () => {
     return (
       <div style={{ padding: '32px' }}>
         <Alert variant="error">{error || 'No encontrado.'}</Alert>
-        <Link to="/sistema/reparaciones" className="btn btn-secondary" style={{ marginTop: 16, textDecoration: 'none' }}>
+        <Link to="/sistema/reparaciones" className="btn btn-secondary"
+          style={{ marginTop: 16, textDecoration: 'none' }}>
           <ArrowLeft size={15} /> Volver
         </Link>
       </div>
     );
   }
 
+  const siguiente = SIGUIENTE_ESTADO[rep.estado];
   const puedeRemito = ['terminado', 'entregado'].includes(rep.estado) && rep.cliente;
   const puedeFactura = rep.remito && (!rep.factura || rep.factura.estado === 'rechazada');
+  const f = rep.factura;
 
   return (
     <div>
       <div className="pantalla-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <Link to="/sistema/reparaciones" className="btn btn-secondary" style={{ textDecoration: 'none' }}>
-            <ArrowLeft size={15} /> Volver
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+          <Link to="/sistema/reparaciones" className="icono-btn" aria-label="Volver a reparaciones">
+            <ArrowLeft size={18} />
           </Link>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h2 className="pantalla-titulo">Orden #{rep.numero}</h2>
-            <span className="etiqueta" style={{ marginTop: '5px', color: COLOR_ESTADO[rep.estado], borderColor: 'currentColor' }}>
-              {ETIQUETA_ESTADO[rep.estado]}
-            </span>
+            <p className="pantalla-sub">
+              {rep.cliente?.nombre ?? 'Sin cliente'}
+              {' · '}
+              Ingreso {new Date(rep.ingreso).toLocaleDateString('es-AR')}
+            </p>
           </div>
         </div>
       </div>
@@ -220,114 +219,161 @@ const ReparacionDetalle = () => {
       {error ? <Alert variant="error" className="mb-3">{error}</Alert> : null}
       {aviso ? <Alert variant="success" className="mb-3">{aviso}</Alert> : null}
 
-      {/* ---------------- Datos ---------------- */}
-      <div className="ui-card" style={{ padding: '18px', marginBottom: '16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
-          <div>
-            <div style={labelStyle}>Cliente</div>
-            {rep.cliente ? (
-              <Link to="/sistema/clientes" style={{ color: 'var(--accent)', fontWeight: 700, textDecoration: 'none' }}>
-                {rep.cliente.nombre}
-              </Link>
-            ) : <span style={{ color: 'var(--warning)' }}>Sin cliente asignado</span>}
+      {/* ---------------- Estado y paso siguiente ---------------- */}
+      <div className="seccion" style={{ marginTop: 0 }}>
+        <div className="seccion__cab">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span className="dato__label">Estado actual</span>
+            <div style={{ marginTop: '4px' }}>
+              <span className="etiqueta etiqueta--fuerte"
+                style={{ color: COLOR_ESTADO[rep.estado], borderColor: 'currentColor', background: 'none' }}>
+                {ETIQUETA_ESTADO[rep.estado]}
+              </span>
+            </div>
           </div>
-          <div>
-            <div style={labelStyle}>Ficha del motor</div>
-            {rep.motor ? (
-              <Link to={`/sistema/motores/ver/${rep.motor.nro_motor}`} style={{ color: 'var(--accent)', fontWeight: 700, textDecoration: 'none' }}>
-                #{rep.motor.nro_motor} {rep.motor.descripcion}
-              </Link>
-            ) : <span style={{ color: 'var(--text-light)' }}>Sin ficha vinculada</span>}
-          </div>
+          {esEditor && (
+            <button type="button" className="icono-btn" aria-label="Elegir otro estado"
+              aria-expanded={verEstados} onClick={() => setVerEstados((v) => !v)}>
+              <Settings2 size={17} />
+            </button>
+          )}
         </div>
 
-        {rep.problema && (
-          <div style={{ marginTop: '14px' }}>
-            <div style={labelStyle}>Problema declarado</div>
-            <p style={{ margin: 0 }}>{rep.problema}</p>
-          </div>
+        {esEditor && siguiente && !verEstados && (
+          <>
+            <button type="button" className="paso" onClick={() => cambiar(siguiente)}
+              disabled={avanzando}>
+              <ArrowRight size={19} />
+              Marcar {ETIQUETA_ESTADO[siguiente].toLowerCase()}
+            </button>
+            {rep.estado === 'terminado' && (
+              <p className="paso__hint">Al entregar se registra la fecha de egreso.</p>
+            )}
+          </>
         )}
 
-        {esEditor && (
-          <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={labelStyle}>Estado</span>
-            <select value={rep.estado} onChange={(e) => cambiar(e.target.value)}
-              style={{ ...inputStyle, width: 'auto', minWidth: '180px' }}>
+        {esEditor && verEstados && (
+          <div>
+            <label className="campo-label" htmlFor="rd-estado">Cambiar a</label>
+            <select id="rd-estado" className="ui-input" value={rep.estado}
+              onChange={(e) => cambiar(e.target.value)}>
               {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
             </select>
           </div>
         )}
       </div>
 
+      {/* ---------------- Datos ---------------- */}
+      <div className="seccion">
+        <div className="datos">
+          <Dato label="Cliente" vacio={!rep.cliente}>
+            {rep.cliente ? (
+              <Link to="/sistema/clientes" style={{ fontWeight: 700 }}>{rep.cliente.nombre}</Link>
+            ) : 'Sin cliente asignado'}
+          </Dato>
+
+          <Dato label="Ficha del motor" vacio={!rep.motor}>
+            {rep.motor ? (
+              <Link to={`/sistema/motores/ver/${rep.motor.nro_motor}`} style={{ fontWeight: 700 }}>
+                #{rep.motor.nro_motor} {rep.motor.descripcion}
+              </Link>
+            ) : 'Sin ficha — se vincula al editar la orden'}
+          </Dato>
+
+          <Dato label="Ingreso">{new Date(rep.ingreso).toLocaleDateString('es-AR')}</Dato>
+
+          {rep.egreso && (
+            <Dato label="Egreso">{new Date(rep.egreso).toLocaleDateString('es-AR')}</Dato>
+          )}
+        </div>
+
+        {rep.problema && (
+          <div style={{ marginTop: '16px' }}>
+            <span className="dato__label">Problema declarado</span>
+            <div className="dato__valor">{rep.problema}</div>
+          </div>
+        )}
+      </div>
+
       {/* ---------------- Diagnostico ---------------- */}
       {esEditor && (
-        <div className="ui-card" style={{ padding: '18px', marginBottom: '16px' }}>
-          <h3 style={{ marginTop: 0, fontSize: '1.05rem' }}>Diagnostico</h3>
-          <p style={{ marginTop: 0, fontSize: '0.85rem', color: 'var(--text-light)' }}>
-            Que se encontro y que se hizo. Se imprime en el remito.
-          </p>
-          <textarea rows={3} style={{ ...inputStyle, resize: 'vertical' }}
+        <div className="seccion">
+          <div className="seccion__cab">
+            <Wrench size={17} />
+            <div>
+              <h3 className="seccion__titulo">Diagnostico</h3>
+              <p className="seccion__ayuda">Que se encontro y que se hizo. Se imprime en el remito.</p>
+            </div>
+          </div>
+
+          <textarea rows={3} className="ui-input" style={{ resize: 'vertical' }}
             value={diagnostico} onChange={(e) => setDiagnostico(e.target.value)}
             placeholder="Ej: Bobinado de arranque quemado, se rebobino completo." />
-          <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" onClick={guardarDiagnostico} isLoading={guardandoDiag}>
-              Guardar diagnostico
-            </Button>
-          </div>
+
+          {diagnostico !== (rep.diagnostico ?? '') && (
+            <div className="acciones">
+              <button type="button" className="btn btn-secondary"
+                onClick={() => setDiagnostico(rep.diagnostico ?? '')}>
+                Descartar
+              </button>
+              <Button variant="primary" onClick={guardarDiagnostico} isLoading={guardandoDiag}>
+                Guardar diagnostico
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
-      {/* ---------------- Presupuesto ---------------- */}
-      <div className="ui-card" style={{ padding: '18px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <FileText size={18} style={{ color: 'var(--text-light)' }} />
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Presupuesto</h3>
-              {rep.presupuesto ? (
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>
-                  N° {rep.presupuesto.numero} · {pesos(rep.presupuesto.total)}
-                </span>
-              ) : <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>Todavia no se cargo</span>}
-            </div>
-          </div>
-          {esEditor && (rep.presupuesto ? (
-            <Link to={`/sistema/presupuestos/${rep.presupuesto.id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>
-              Ver
-            </Link>
-          ) : (
-            <button type="button" className="btn btn-primary"
-              onClick={() => navigate(`/sistema/presupuestos/nuevo?reparacion=${id}`)}>
-              Crear presupuesto
-            </button>
-          ))}
+      {/* ---------------- Documentos ---------------- */}
+      <div className="seccion">
+        <div className="seccion__cab">
+          <FileText size={17} />
+          <h3 className="seccion__titulo">Documentos</h3>
         </div>
-      </div>
 
-      {/* ---------------- Remito ---------------- */}
-      <div className="ui-card" style={{ padding: '18px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Truck size={18} style={{ color: 'var(--text-light)' }} />
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Remito</h3>
-              {rep.remito ? (
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>
-                  N° {comprobanteDe(rep.remito)} · {pesos(rep.remito.total)}
-                </span>
-              ) : (
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>
-                  {puedeRemito ? 'Todavia no se emitio' : 'Se habilita cuando la orden esta terminada o entregada, con cliente'}
-                </span>
-              )}
-            </div>
-          </div>
-          {esEditor && (rep.remito ? (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <Link to={`/sistema/remitos/${rep.remito.id}`} className="btn btn-secondary" style={{ textDecoration: 'none' }}>
-                Editar
+        <div style={{ display: 'grid', gap: '10px' }}>
+          <Doc
+            icono={FileText}
+            hay={Boolean(rep.presupuesto)}
+            titulo="Presupuesto"
+            sub={rep.presupuesto
+              ? `N° ${rep.presupuesto.numero} · ${pesos(rep.presupuesto.total)}`
+              : 'Todavia no se cargo'}
+            acciones={esEditor && (rep.presupuesto ? (
+              <Link to={`/sistema/presupuestos/${rep.presupuesto.id}`} className="btn btn-secondary">
+                Ver
               </Link>
-              <Button variant="secondary" onClick={pdfRemito} isLoading={generandoPdfRemito}>
+            ) : (
+              <button type="button" className="btn btn-secondary"
+                onClick={() => navigate(`/sistema/presupuestos/nuevo?reparacion=${id}`)}>
+                Crear
+              </button>
+            ))}
+          />
+
+          <Doc
+            icono={Truck}
+            hay={Boolean(rep.remito)}
+            titulo="Remito de entrega"
+            sub={rep.remito
+              ? `N° ${comprobanteDe(rep.remito)} · ${pesos(rep.remito.total)}`
+              : puedeRemito
+                ? 'Todavia no se emitio'
+                : 'Se habilita con la orden terminada y un cliente asignado'}
+            acciones={esEditor && !rep.remito && puedeRemito && (
+              <Button variant="primary" onClick={crearRemito} isLoading={creandoRemito}>
+                Emitir
+              </Button>
+            )}
+          />
+
+          {rep.remito && esEditor && (
+            <div className="acciones" style={{ marginTop: 0 }}>
+              <Link to={`/sistema/remitos/${rep.remito.id}`} className="btn btn-secondary">
+                Editar remito
+              </Link>
+              <Button variant="secondary" isLoading={generandoPdfRemito}
+                onClick={() => abrirPdf(setGenerandoPdfRemito, () => remitos.generarPdf(rep.remito.id))}>
                 <FileDown size={15} /> PDF
               </Button>
               <button type="button" className="btn btn-secondary" onClick={copiarLinkRemito}>
@@ -335,51 +381,30 @@ const ReparacionDetalle = () => {
                 {copiadoRemito ? 'Copiado' : 'Copiar link'}
               </button>
             </div>
-          ) : puedeRemito && (
-            <Button variant="primary" onClick={crearRemito} isLoading={creandoRemito}>
-              Emitir remito
-            </Button>
-          ))}
-        </div>
-      </div>
+          )}
 
-      {/* ---------------- Factura ---------------- */}
-      <div className="ui-card" style={{ padding: '18px', marginBottom: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Receipt size={18} style={{ color: 'var(--text-light)' }} />
-            <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Factura</h3>
-              {rep.factura ? (
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{
-                    padding: '2px 9px', borderRadius: '999px', fontSize: '0.76rem', fontWeight: 700,
-                    border: `1px solid ${COLOR_ESTADO_FACTURA[rep.factura.estado]}`,
-                    color: COLOR_ESTADO_FACTURA[rep.factura.estado],
-                  }}>
-                    {ETIQUETA_ESTADO_FACTURA[rep.factura.estado]}
-                  </span>
-                  <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>
-                    {rep.factura.numero
-                      ? `${letraFactura(rep.factura.cbte_tipo)} ${comprobanteDe(rep.factura)}`
-                      : `Factura ${letraFactura(rep.factura.cbte_tipo)}`} · {pesos(rep.factura.total)}
-                  </span>
-                </div>
-              ) : (
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-light)' }}>
-                  {rep.remito ? 'Todavia no se emitio' : 'Se habilita cuando hay un remito'}
-                </span>
-              )}
-            </div>
-          </div>
-          {esEditor && (
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {!rep.factura && puedeFactura && (
-                <Button variant="primary" onClick={crearFactura} isLoading={creandoFactura}>
-                  Facturar
-                </Button>
-              )}
-              {rep.factura && rep.factura.estado === 'pendiente' && (
+          <Doc
+            icono={Receipt}
+            hay={Boolean(f)}
+            titulo={f ? `Factura ${letraFactura(f.cbte_tipo)}` : 'Factura'}
+            sub={f
+              ? `${f.numero ? comprobanteDe(f) : 'sin numero'} · ${pesos(f.total)}`
+              : rep.remito ? 'Todavia no se emitio' : 'Se habilita cuando hay un remito'}
+            acciones={f ? (
+              <span className="etiqueta"
+                style={{ color: COLOR_ESTADO_FACTURA[f.estado], borderColor: 'currentColor' }}>
+                {ETIQUETA_ESTADO_FACTURA[f.estado]}
+              </span>
+            ) : esEditor && puedeFactura && (
+              <Button variant="primary" onClick={crearFactura} isLoading={creandoFactura}>
+                Facturar
+              </Button>
+            )}
+          />
+
+          {esEditor && f && (
+            <div className="acciones" style={{ marginTop: 0 }}>
+              {f.estado === 'pendiente' && (
                 <>
                   <Button variant="primary" onClick={emitirFactura} isLoading={emitiendo}>
                     Emitir CAE
@@ -389,32 +414,36 @@ const ReparacionDetalle = () => {
                   </Button>
                 </>
               )}
-              {rep.factura && rep.factura.estado === 'rechazada' && (
+              {f.estado === 'rechazada' && (
                 <Button variant="primary" onClick={crearFactura} isLoading={creandoFactura}>
                   Reintentar
                 </Button>
               )}
-              {rep.factura?.estado === 'autorizada' && (
-                <Button variant="secondary" onClick={pdfFactura} isLoading={generandoPdfFactura}>
-                  <FileDown size={15} /> PDF
+              {f.estado === 'autorizada' && (
+                <Button variant="secondary" isLoading={generandoPdfFactura}
+                  onClick={() => abrirPdf(setGenerandoPdfFactura, () => facturas.generarPdf(f.id))}>
+                  <FileDown size={15} /> PDF de la factura
                 </Button>
               )}
             </div>
           )}
-        </div>
 
-        {rep.factura?.estado === 'rechazada' && rep.factura?.arca_errores && (
-          <div style={{ marginTop: '12px' }}>
-            <Alert variant="error">{JSON.stringify(rep.factura.arca_errores)}</Alert>
-          </div>
-        )}
+          {f?.estado === 'rechazada' && f?.arca_errores && (
+            <Alert variant="error">
+              ARCA rechazo el comprobante: {JSON.stringify(f.arca_errores)}
+            </Alert>
+          )}
+        </div>
       </div>
 
-      {!rep.motor && (
-        <Alert variant="warning">
-          <Wrench size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} />
-          Esta orden no tiene una ficha de motor vinculada. Se puede asociar despues desde la edicion de la orden.
-        </Alert>
+      {!rep.cliente && (
+        <div style={{ marginTop: '16px' }}>
+          <Alert variant="warning">
+            <User size={15} style={{ marginRight: '6px', verticalAlign: 'text-bottom' }} />
+            Esta orden no tiene cliente. Sin cliente no se puede consultar el seguimiento
+            publico ni emitir el remito.
+          </Alert>
+        </div>
       )}
     </div>
   );

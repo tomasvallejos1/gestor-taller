@@ -26,6 +26,25 @@ export const COLOR_ESTADO = {
 /** Estados en los que el motor todavia esta en el taller. */
 export const ABIERTOS = ['ingresado', 'en_proceso', 'esperando_repuesto', 'terminado'];
 
+/**
+ * El estado que sigue en el recorrido normal de una orden.
+ *
+ * Una reparacion avanza casi siempre al casillero de al lado. Tener
+ * que abrir un desplegable de seis opciones y buscar cual venia
+ * despues son tres toques para la accion que mas se repite en el dia.
+ * Con esto, avanzar es uno solo.
+ *
+ * `esperando_repuesto` vuelve a `en_proceso`: cuando el repuesto
+ * llega, el trabajo se retoma. `entregado` y `cancelado` no tienen
+ * siguiente --son finales-- y ahi el boton no se ofrece.
+ */
+export const SIGUIENTE_ESTADO = {
+  ingresado: 'en_proceso',
+  en_proceso: 'terminado',
+  esperando_repuesto: 'en_proceso',
+  terminado: 'entregado',
+};
+
 const SELECT = `
   id, numero, estado, ingreso, egreso, problema, diagnostico, notas, creado_en,
   cliente:cliente_id (id, nombre, telefono),

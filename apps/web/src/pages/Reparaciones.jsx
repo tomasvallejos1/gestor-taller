@@ -1,18 +1,34 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, Trash2, X, Wrench } from 'lucide-react';
+import {
+  Plus, Search, Trash2, X, Wrench, Pencil, ArrowRight, Check,
+} from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
+import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import { useAuth } from '../context/AuthContext';
-import { useEsMobile } from '../lib/useMediaQuery';
 import {
-  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO,
+  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO, SIGUIENTE_ESTADO,
   listarReparaciones, guardarReparacion, cambiarEstado, eliminarReparacion,
 } from '../lib/reparaciones';
 import { listarClientes } from '../lib/clientes';
 import { listarMotores } from '../lib/motores';
+
+/**
+ * Listado de ordenes de reparacion.
+ *
+ * Mismo criterio que Motores y Presupuestos: la tarjeta entera abre la
+ * orden --que es lo que se hace todo el dia-- y lo ocasional queda en
+ * el menu de la esquina. Antes el unico blanco tactil era el texto
+ * "Orden #3", de 74x24 px: para abrir una orden con el celular en el
+ * taller habia que apuntar.
+ *
+ * El filtro de estado pasa de un <select> a chips porque son seis
+ * opciones fijas y filtrar es un toque en vez de abrir, elegir y
+ * esperar que cierre.
+ */
 
 const hoy = () => new Date().toISOString().slice(0, 10);
 const VACIA = {
@@ -22,7 +38,6 @@ const VACIA = {
 
 const Reparaciones = () => {
   const { esEditor } = useAuth();
-  const esMobile = useEsMobile();
 
   const [reparaciones, setReparaciones] = useState([]);
   const [filtroEstado, setFiltroEstado] = useState('');
@@ -113,90 +128,137 @@ const Reparaciones = () => {
     }
   };
 
-  const labelStyle = { display: 'block', fontSize: '0.72rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
-  const inputStyle = { width: '100%', padding: '11px 13px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: '1rem', fontFamily: 'inherit' };
+  const filtrando = Boolean(filtroEstado || texto.trim());
 
   return (
     <div>
-      <div className="ui-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px', borderColor: 'var(--accent-border)', background: 'var(--gradient-soft)' }}>
+      <div className="pantalla-header">
         <div>
-          <h2 style={{ fontSize: '1.65rem', margin: 0 }}>Reparaciones</h2>
-          <p style={{ marginTop: '5px', fontSize: '0.92rem', color: 'var(--text-light)' }}>
-            Que motor de quien, en que estado y desde cuando
-          </p>
+          <h2 className="pantalla-titulo">Reparaciones</h2>
+          <p className="pantalla-sub">Que motor de quien, en que estado y desde cuando</p>
         </div>
         {esEditor && (
-          <Button variant="primary" onClick={() => abrirFormulario({ ...VACIA })}>
+          <button type="button" className="btn btn-primary"
+            onClick={() => abrirFormulario({ ...VACIA })}>
             <Plus size={16} /> Nueva orden
-          </Button>
+          </button>
         )}
       </div>
 
       {error ? <Alert variant="error" className="mb-3">{error}</Alert> : null}
 
+      <div className="herramientas">
+        <div className="buscador">
+          <Search size={16} />
+          <input
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            placeholder="N° de orden o apellido"
+            aria-label="Buscar por numero de orden o cliente"
+          />
+          {texto && (
+            <button type="button" className="buscador__limpiar" aria-label="Borrar la busqueda"
+              onClick={() => setTexto('')}>
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="chips" role="group" aria-label="Filtrar por estado">
+        {/* "En el taller" es el filtro por defecto y el que se usa: son
+            las ordenes que tienen un motor fisico esperando. */}
+        <button type="button" aria-pressed={soloAbiertas && !filtroEstado}
+          className={`chip${soloAbiertas && !filtroEstado ? ' activo' : ''}`}
+          onClick={() => { setSoloAbiertas(true); setFiltroEstado(''); }}>
+          En el taller
+        </button>
+        <button type="button" aria-pressed={!soloAbiertas && !filtroEstado}
+          className={`chip${!soloAbiertas && !filtroEstado ? ' activo' : ''}`}
+          onClick={() => { setSoloAbiertas(false); setFiltroEstado(''); }}>
+          Todas
+        </button>
+        {ESTADOS.map((e) => (
+          <button key={e} type="button" aria-pressed={filtroEstado === e}
+            className={`chip${filtroEstado === e ? ' activo' : ''}`}
+            onClick={() => setFiltroEstado(filtroEstado === e ? '' : e)}>
+            {ETIQUETA_ESTADO[e]}
+          </button>
+        ))}
+      </div>
+
       {editando && (
-        <form onSubmit={guardar} className="ui-card" style={{ padding: esMobile ? '18px' : '24px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>
-              {editando.id ? `Orden #${editando.numero}` : 'Nueva orden'}
-            </h3>
+        <form onSubmit={guardar} className="seccion" style={{ marginBottom: '16px' }}>
+          <div className="seccion__cab">
+            <div style={{ flex: 1 }}>
+              <h3 className="seccion__titulo">
+                {editando.id ? `Orden #${editando.numero}` : 'Nueva orden'}
+              </h3>
+            </div>
             <button type="button" onClick={() => setEditando(null)} aria-label="Cerrar"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-light)', padding: '8px', minHeight: '40px' }}>
+              className="icono-btn">
               <X size={18} />
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr', gap: '14px' }}>
+          <div className="datos">
             <div>
-              <label style={labelStyle} htmlFor="r-cliente">
+              <label className="campo-label" htmlFor="r-cliente">
                 Cliente{!editando.id && ' *'}
               </label>
-              <select id="r-cliente" required={!editando.id} style={inputStyle} value={editando.cliente_id ?? ''}
+              <select id="r-cliente" className="ui-input" required={!editando.id}
+                value={editando.cliente_id ?? ''}
                 onChange={(e) => setEditando({ ...editando, cliente_id: e.target.value })}>
                 <option value="">{editando.id ? 'Sin asignar' : 'Elegi un cliente'}</option>
                 {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
             </div>
             <div>
-              <label style={labelStyle} htmlFor="r-motor">Ficha del motor</label>
-              <select id="r-motor" style={inputStyle} value={editando.motor_id ?? ''}
+              <label className="campo-label" htmlFor="r-motor">Ficha del motor</label>
+              <select id="r-motor" className="ui-input" value={editando.motor_id ?? ''}
                 onChange={(e) => setEditando({ ...editando, motor_id: e.target.value })}>
-                <option value="">Sin ficha — se puede vincular despues</option>
+                <option value="">Sin ficha — se vincula despues</option>
                 {motores.map((m) => (
                   <option key={m.id} value={m.id}>#{m.nro_motor} — {m.descripcion}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label style={labelStyle} htmlFor="r-estado">Estado</label>
-              <select id="r-estado" style={inputStyle} value={editando.estado}
+              <label className="campo-label" htmlFor="r-estado">Estado</label>
+              <select id="r-estado" className="ui-input" value={editando.estado}
                 onChange={(e) => setEditando({ ...editando, estado: e.target.value })}>
                 {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
               </select>
             </div>
             <div>
-              <label style={labelStyle} htmlFor="r-ingreso">Ingreso</label>
-              <input id="r-ingreso" type="date" style={inputStyle} value={editando.ingreso ?? ''}
+              <label className="campo-label" htmlFor="r-ingreso">Ingreso</label>
+              <input id="r-ingreso" type="date" className="ui-input" value={editando.ingreso ?? ''}
                 onChange={(e) => setEditando({ ...editando, ingreso: e.target.value })} />
-            </div>
-            <div style={{ gridColumn: esMobile ? 'auto' : 'span 2' }}>
-              <label style={labelStyle} htmlFor="r-problema">Problema declarado</label>
-              <textarea id="r-problema" rows={2} style={{ ...inputStyle, resize: 'vertical' }}
-                value={editando.problema ?? ''}
-                onChange={(e) => setEditando({ ...editando, problema: e.target.value })}
-                placeholder="Ej: Hace ruido y no arranca" />
-            </div>
-            <div style={{ gridColumn: esMobile ? 'auto' : 'span 2' }}>
-              <label style={labelStyle} htmlFor="r-notas">Notas internas</label>
-              <textarea id="r-notas" rows={2} style={{ ...inputStyle, resize: 'vertical' }}
-                value={editando.notas ?? ''}
-                onChange={(e) => setEditando({ ...editando, notas: e.target.value })}
-                placeholder="No se muestran en la consulta publica de estado" />
             </div>
           </div>
 
-          <div style={{ marginTop: '18px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button type="button" className="btn btn-secondary" onClick={() => setEditando(null)}>Cancelar</button>
+          <div style={{ marginTop: '14px' }}>
+            <label className="campo-label" htmlFor="r-problema">Problema declarado</label>
+            <textarea id="r-problema" rows={2} className="ui-input"
+              style={{ resize: 'vertical' }}
+              value={editando.problema ?? ''}
+              onChange={(e) => setEditando({ ...editando, problema: e.target.value })}
+              placeholder="Ej: Hace ruido y no arranca" />
+          </div>
+
+          <div style={{ marginTop: '12px' }}>
+            <label className="campo-label" htmlFor="r-notas">Notas internas</label>
+            <textarea id="r-notas" rows={2} className="ui-input"
+              style={{ resize: 'vertical' }}
+              value={editando.notas ?? ''}
+              onChange={(e) => setEditando({ ...editando, notas: e.target.value })}
+              placeholder="No se muestran en la consulta publica de estado" />
+          </div>
+
+          <div className="acciones">
+            <button type="button" className="btn btn-secondary" onClick={() => setEditando(null)}>
+              Cancelar
+            </button>
             <Button type="submit" variant="primary" isLoading={guardando}>
               {editando.id ? 'Guardar' : 'Crear orden'}
             </Button>
@@ -204,100 +266,81 @@ const Reparaciones = () => {
         </form>
       )}
 
-      <div className="ui-card" style={{ padding: '18px', marginBottom: '20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: esMobile ? '1fr' : '1fr 1fr auto', gap: '14px', alignItems: 'end' }}>
-          <div>
-            <label style={labelStyle} htmlFor="r-buscar">N° de orden</label>
-            <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-light)' }} />
-              <input id="r-buscar" style={{ ...inputStyle, paddingLeft: '38px' }} inputMode="numeric"
-                value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Ej: 12" />
-            </div>
-          </div>
-          <div>
-            <label style={labelStyle} htmlFor="r-filtro">Estado</label>
-            <select id="r-filtro" style={inputStyle} value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}>
-              <option value="">Todos</option>
-              {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
-            </select>
-          </div>
-          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '44px', cursor: 'pointer' }}>
-            <input type="checkbox" checked={soloAbiertas} disabled={Boolean(filtroEstado)}
-              onChange={(e) => setSoloAbiertas(e.target.checked)}
-              style={{ width: '18px', height: '18px' }} />
-            <span style={{ fontSize: '0.9rem' }}>Solo en el taller</span>
-          </label>
-        </div>
-      </div>
-
       {cargando ? (
-        <div className="ui-card" style={{ padding: '50px' }}><Spinner label="Cargando..." centered /></div>
+        <div style={{ padding: '48px 0' }}><Spinner label="Cargando..." centered /></div>
       ) : reparaciones.length === 0 ? (
-        <div className="ui-card" style={{ padding: '50px', textAlign: 'center', color: 'var(--text-light)' }}>
-          <Wrench size={26} style={{ opacity: 0.5, marginBottom: '10px' }} />
-          <div>No hay reparaciones que coincidan.</div>
+        <div className="vacio">
+          <Wrench size={26} />
+          <div>
+            {filtrando
+              ? 'Ninguna orden coincide con la busqueda.'
+              : 'Todavia no hay ordenes cargadas.'}
+          </div>
         </div>
       ) : (
-        <div style={{ display: 'grid', gap: '12px' }}>
-          {reparaciones.map((r) => (
-            <div key={r.id} className="ui-card" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-                    <Link to={`/sistema/reparaciones/${r.id}`} style={{ fontWeight: 800, fontSize: '1.05rem', color: 'inherit', textDecoration: 'none' }}>
-                      Orden #{r.numero}
-                    </Link>
-                    <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 700, border: `1px solid ${COLOR_ESTADO[r.estado]}`, color: COLOR_ESTADO[r.estado] }}>
+        <ul className="lista">
+          {reparaciones.map((r) => {
+            const siguiente = SIGUIENTE_ESTADO[r.estado];
+            return (
+              <li key={r.id} className="fila">
+                <Link to={`/sistema/reparaciones/${r.id}`} className="fila-link">
+                  <div className="fila-encabezado">
+                    <span className="fila-titulo">
+                      {r.cliente?.nombre ?? <span style={{ color: 'var(--text-light)' }}>Sin cliente</span>}
+                    </span>
+                    <span className="fila-nro">N° {r.numero}</span>
+                  </div>
+
+                  <div className="fila-sub">
+                    {r.motor
+                      ? `#${r.motor.nro_motor} ${r.motor.descripcion}`
+                      : 'Sin ficha asociada'}
+                    {' · '}
+                    {new Date(r.ingreso).toLocaleDateString('es-AR')}
+                  </div>
+
+                  <div className="fila-etiquetas">
+                    <span className="etiqueta"
+                      style={{ color: COLOR_ESTADO[r.estado], borderColor: 'currentColor' }}>
                       {ETIQUETA_ESTADO[r.estado]}
                     </span>
                   </div>
-
-                  <div style={{ marginTop: '7px', fontSize: '0.92rem' }}>
-                    {r.motor ? (
-                      <Link to={`/sistema/motores/ver/${r.motor.nro_motor}`} style={{ color: 'var(--accent)', fontWeight: 600 }}>
-                        #{r.motor.nro_motor} {r.motor.descripcion}
-                      </Link>
-                    ) : <span style={{ color: 'var(--text-light)' }}>Sin ficha asociada</span>}
-                    {r.cliente && <span style={{ color: 'var(--text-light)' }}> · {r.cliente.nombre}</span>}
-                  </div>
-
-                  <div style={{ marginTop: '5px', fontSize: '0.82rem', color: 'var(--text-light)' }}>
-                    Ingreso {new Date(r.ingreso).toLocaleDateString('es-AR')}
-                    {r.egreso ? ` · Egreso ${new Date(r.egreso).toLocaleDateString('es-AR')}` : ''}
-                  </div>
-
-                  {r.notas && (
-                    <div style={{ marginTop: '7px', fontSize: '0.87rem', color: 'var(--text-light)' }}>{r.notas}</div>
-                  )}
-                </div>
+                </Link>
 
                 {esEditor && (
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-                    <select value={r.estado} onChange={(e) => cambiar(r.id, e.target.value)}
-                      aria-label={`Estado de la orden ${r.numero}`}
-                      style={{ ...inputStyle, width: 'auto', minWidth: '160px', padding: '10px 12px' }}>
-                      {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
-                    </select>
-                    <button type="button" onClick={() => abrirFormulario({
-                      ...VACIA, ...r,
-                      cliente_id: r.cliente?.id ?? '',
-                      motor_id: r.motor?.id ?? '',
-                      egreso: r.egreso ?? '',
-                    })}
-                      className="btn btn-secondary" style={{ minHeight: '44px' }}>
-                      Editar
-                    </button>
-                    <button type="button" onClick={() => setABorrar(r)}
-                      aria-label={`Eliminar orden ${r.numero}`}
-                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', color: 'var(--danger)', padding: '10px', minHeight: '44px', minWidth: '44px' }}>
-                      <Trash2 size={15} />
-                    </button>
+                  <div className="fila-acciones">
+                    <MenuAcciones etiqueta={`Acciones de la orden ${r.numero}`}>
+                      {/* El salto al estado que sigue es lo que mas se
+                          toca; va primero y con su nombre, no como una
+                          lista de seis donde hay que buscar cual sigue. */}
+                      {siguiente && (
+                        <ItemMenu onClick={() => cambiar(r.id, siguiente)} icono={ArrowRight}>
+                          Marcar {ETIQUETA_ESTADO[siguiente].toLowerCase()}
+                        </ItemMenu>
+                      )}
+                      <ItemMenu onClick={() => abrirFormulario({
+                        ...VACIA, ...r,
+                        cliente_id: r.cliente?.id ?? '',
+                        motor_id: r.motor?.id ?? '',
+                        egreso: r.egreso ?? '',
+                      })} icono={Pencil}>
+                        Editar orden
+                      </ItemMenu>
+                      <ItemMenu onClick={() => setABorrar(r)} icono={Trash2} peligro>
+                        Eliminar
+                      </ItemMenu>
+                    </MenuAcciones>
                   </div>
                 )}
-              </div>
-            </div>
-          ))}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {reparaciones.length > 0 && (
+        <div className="contador">
+          {reparaciones.length} {reparaciones.length === 1 ? 'orden' : 'ordenes'}
         </div>
       )}
 

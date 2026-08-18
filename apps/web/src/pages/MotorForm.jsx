@@ -713,11 +713,16 @@ const MotorForm = () => {
         )}
 
         {!soloLectura && (
-          <div style={{ marginTop: '28px', display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+          /* Una ficha de motor es el formulario mas largo de la app
+             --datos, bobinado, aislaciones y fotos--. En el celular
+             son varias pantallas de scroll, asi que el guardar viaja
+             fijo al pie en vez de esperar abajo de todo. */
+          <div className="barra-guardar">
             <Link to="/sistema/motores" className="btn btn-secondary" style={{ textDecoration: 'none', fontWeight: 600 }}>
               Cancelar
             </Link>
-            <Button type="submit" variant="primary" size="lg" isLoading={guardando || subiendo}>
+            <Button type="submit" variant="primary" size="lg" isLoading={guardando || subiendo}
+              className="barra-guardar__principal">
               <Save size={16} />
               {subiendo ? 'Subiendo fotos...' : esEdicion ? 'Guardar cambios' : 'Crear ficha'}
             </Button>

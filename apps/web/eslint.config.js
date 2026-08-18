@@ -5,7 +5,10 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // `dev-dist` es el service worker que genera vite-plugin-pwa al
+  // levantar el server. Es codigo generado y minificado: lintearlo
+  // sepultaba los errores reales bajo los suyos.
+  globalIgnores(['dist', 'dev-dist']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [

@@ -368,15 +368,31 @@ const RemitoForm = () => {
           placeholder="Ej: Se entrego con garantia de 90 dias sobre el rebobinado." />
       </div>
 
-      <div style={{ display: 'flex', gap: '9px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-        <button type="button" onClick={copiarLink} className="btn btn-secondary">
-          {copiado ? <Check size={15} /> : <Share2 size={15} />}
-          {copiado ? 'Link copiado' : 'Copiar link'}
-        </button>
-        <Button variant="secondary" onClick={descargarPdf} isLoading={generandoPdf}>
-          <FileDown size={15} /> PDF
-        </Button>
-        <Button variant="primary" size="lg" onClick={guardar} isLoading={guardando}>
+      {/* Compartir y descargar son acciones de despues de guardar, no
+          del momento de editar: quedan en el flujo. La barra fija de
+          abajo carga solo con lo que se toca a cada rato. */}
+      <div className="seccion">
+        <div className="seccion__cab">
+          <Share2 size={17} />
+          <div>
+            <h3 className="seccion__titulo">Entregar al cliente</h3>
+            <p className="seccion__ayuda">El PDF sale con lo ultimo que guardaste.</p>
+          </div>
+        </div>
+        <div className="acciones" style={{ marginTop: 0 }}>
+          <button type="button" onClick={copiarLink} className="btn btn-secondary">
+            {copiado ? <Check size={15} /> : <Share2 size={15} />}
+            {copiado ? 'Link copiado' : 'Copiar link'}
+          </button>
+          <Button variant="secondary" onClick={descargarPdf} isLoading={generandoPdf}>
+            <FileDown size={15} /> Ver PDF
+          </Button>
+        </div>
+      </div>
+
+      <div className="barra-guardar">
+        <Button variant="primary" size="lg" onClick={guardar} isLoading={guardando}
+          className="barra-guardar__principal">
           <Save size={16} /> Guardar
         </Button>
       </div>

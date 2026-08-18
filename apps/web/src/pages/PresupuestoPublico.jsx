@@ -146,8 +146,11 @@ const PresupuestoPublico = () => {
           </div>
         </div>
 
+        {/* En el celular la tabla se apila por renglon (ver .doc-tabla
+            en index.css): con scroll lateral el importe --lo que el
+            cliente vino a mirar-- quedaba fuera de pantalla. */}
         <div style={{ overflowX: 'auto', marginTop: '22px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '460px' }}>
+          <table className="doc-tabla" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
                 <th style={{ ...encabezado, textAlign: 'left' }}>Descripcion</th>
@@ -159,10 +162,10 @@ const PresupuestoPublico = () => {
             <tbody>
               {items.map((it, i) => (
                 <tr key={i}>
-                  <td style={celda}>{it.descripcion}</td>
-                  <td style={{ ...celda, textAlign: 'right' }}>{Number(it.cantidad)}</td>
-                  <td style={{ ...celda, textAlign: 'right' }}>{pesos(it.precio_unit)}</td>
-                  <td style={{ ...celda, textAlign: 'right', fontWeight: 700 }}>{pesos(it.subtotal)}</td>
+                  <td style={celda} data-etq="Descripcion">{it.descripcion}</td>
+                  <td style={{ ...celda, textAlign: 'right' }} data-etq="Cant.">{Number(it.cantidad)}</td>
+                  <td style={{ ...celda, textAlign: 'right' }} data-etq="P. unitario">{pesos(it.precio_unit)}</td>
+                  <td style={{ ...celda, textAlign: 'right', fontWeight: 700 }} data-etq="Importe">{pesos(it.subtotal)}</td>
                 </tr>
               ))}
             </tbody>
