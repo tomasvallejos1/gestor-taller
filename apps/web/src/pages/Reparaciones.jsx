@@ -1,63 +1,95 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Plus, Search, Trash2, X, Wrench, Pencil, ArrowRight, Check,
+  Plus, Search, Trash2, X, Wrench, Pencil, ArrowRight, SlidersHorizontal,
+  AlertTriangle, Wallet,
 } from 'lucide-react';
 import Modal from '../components/Modal';
+import Hoja from '../components/Hoja';
+import HojaPago from '../components/HojaPago';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
 import Button from '../components/ui/Button';
 import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import { useAuth } from '../context/AuthContext';
 import {
-  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO, SIGUIENTE_ESTADO,
+  ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO, SIGUIENTE_ESTADO, VISTAS,
   listarReparaciones, guardarReparacion, cambiarEstado, eliminarReparacion,
 } from '../lib/reparaciones';
+import {
+  ETIQUETA_ESTADO_PAGO, COLOR_ESTADO_PAGO, cobranzaDe, alertaCobro, resumenPago,
+  contarDeudores,
+} from '../lib/pagos';
+import { pesos } from '../lib/presupuestos';
+import { fechaCorta, haceCuanto, hoyIso } from '../lib/fechas';
 import { listarClientes } from '../lib/clientes';
 import { listarMotores } from '../lib/motores';
 
 /**
  * Listado de ordenes de reparacion.
  *
- * Mismo criterio que Motores y Presupuestos: la tarjeta entera abre la
- * orden --que es lo que se hace todo el dia-- y lo ocasional queda en
- * el menu de la esquina. Antes el unico blanco tactil era el texto
- * "Orden #3", de 74x24 px: para abrir una orden con el celular en el
- * taller habia que apuntar.
+ * Es la cola de trabajo del taller y se abre veinte veces por dia, casi
+ * siempre desde el celular y casi siempre para una de tres cosas: ver
+ * que hay que hacer, empujar una orden al paso siguiente, o averiguar
+ * quien debe plata.
  *
- * El filtro de estado pasa de un <select> a chips porque son seis
- * opciones fijas y filtrar es un toque en vez de abrir, elegir y
- * esperar que cierre.
+ * De ahi la forma de la pantalla:
+ *
+ *  - Los filtros de arriba no son los seis estados del enum sino las
+ *    preguntas que uno se hace: "que hay en el taller", "que esta para
+ *    entregar", "quien me debe". Los estados sueltos quedan en el panel
+ *    de filtros, que casi nunca se abre.
+ *  - La tarjeta entera abre la orden --que es lo que se hace todo el
+ *    dia-- y lo ocasional vive en el menu de la esquina.
+ *  - Un motor entregado y sin cobrar se pinta en rojo. Es el unico rojo
+ *    de la lista: mientras el motor este en el taller, deber es normal;
+ *    una vez que se fue, la unica palanca para cobrar ya no esta.
+ *  - Dar de alta o editar una orden pasa a una hoja inferior en vez de
+ *    un formulario desplegado en medio de la lista, que empujaba todo
+ *    lo de abajo y dejaba sin referencia al que estaba mirando otra
+ *    cosa.
  */
 
-const hoy = () => new Date().toISOString().slice(0, 10);
 const VACIA = {
-  id: null, motor_id: '', cliente_id: '', estado: 'ingresado', ingreso: hoy(), egreso: '',
+  id: null, motor_id: '', cliente_id: '', estado: 'ingresado', ingreso: hoyIso(), egreso: '',
   problema: '', diagnostico: '', notas: '',
 };
+
+const FILTROS_VACIOS = { estado: '', pago: '' };
+
+/** Cuanto lleva la orden, que es lo que importa mientras esta abierta. */
+const cuando = (r) => (
+  r.estado === 'entregado' && r.egreso
+    ? `entregado ${fechaCorta(r.egreso)}`
+    : `ingreso ${haceCuanto(r.ingreso)}`
+);
 
 const Reparaciones = () => {
   const { esEditor } = useAuth();
 
   const [reparaciones, setReparaciones] = useState([]);
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [soloAbiertas, setSoloAbiertas] = useState(true);
+  const [vista, setVista] = useState('taller');
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
+  const [verFiltros, setVerFiltros] = useState(false);
   const [texto, setTexto] = useState('');
+  const [deudores, setDeudores] = useState(0);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
 
   const [editando, setEditando] = useState(null);
   const [guardando, setGuardando] = useState(false);
+  const [cobrando, setCobrando] = useState(null);
   const [aBorrar, setABorrar] = useState(null);
+  const [aEntregar, setAEntregar] = useState(null);
 
   const [clientes, setClientes] = useState([]);
   const [motores, setMotores] = useState([]);
 
-  const buscar = useCallback(async (estado, abiertas, t) => {
+  const buscar = useCallback(async (v, f, t) => {
     setCargando(true);
     setError('');
     try {
-      const r = await listarReparaciones({ estado, soloAbiertas: abiertas, texto: t });
+      const r = await listarReparaciones({ vista: v, estado: f.estado, pago: f.pago, texto: t });
       setReparaciones(r.reparaciones);
     } catch (e) {
       setError(e.message ?? 'No pudimos cargar las reparaciones.');
@@ -66,16 +98,36 @@ const Reparaciones = () => {
     }
   }, []);
 
+  // El contador de deudores va aparte del listado: tiene que verse en el
+  // chip aunque la lista abierta sea otra.
+  const contar = useCallback(async () => {
+    if (!esEditor) return;
+    try {
+      setDeudores(await contarDeudores());
+    } catch {
+      // Un contador que no carga no puede tapar la pantalla: se queda
+      // en el valor anterior y la lista sigue andando.
+      setDeudores((d) => d);
+    }
+  }, [esEditor]);
+
   const primera = useRef(true);
   useEffect(() => {
     if (primera.current) {
       primera.current = false;
-      buscar(filtroEstado, soloAbiertas, texto);
+      buscar(vista, filtros, texto);
+      // El contador no depende de los filtros: se pide una vez al
+      // entrar y despues solo cuando algo lo puede haber movido.
+      contar();
       return undefined;
     }
-    const t = setTimeout(() => buscar(filtroEstado, soloAbiertas, texto), 300);
+    const t = setTimeout(() => buscar(vista, filtros, texto), 300);
     return () => clearTimeout(t);
-  }, [filtroEstado, soloAbiertas, texto, buscar]);
+  }, [vista, filtros, texto, buscar, contar]);
+
+  const refrescar = async () => {
+    await Promise.all([buscar(vista, filtros, texto), contar()]);
+  };
 
   // Se cargan solo al abrir el formulario, no al entrar a la pantalla.
   const abrirFormulario = async (base) => {
@@ -110,7 +162,7 @@ const Reparaciones = () => {
     try {
       await guardarReparacion(editando);
       setEditando(null);
-      await buscar(filtroEstado, soloAbiertas, texto);
+      await refrescar();
     } catch (err) {
       setError(err.message ?? 'No se pudo guardar.');
     } finally {
@@ -122,24 +174,39 @@ const Reparaciones = () => {
     setError('');
     try {
       await cambiarEstado(id, estado);
-      await buscar(filtroEstado, soloAbiertas, texto);
+      await refrescar();
     } catch (e) {
       setError(e.message ?? 'No se pudo cambiar el estado.');
     }
   };
 
-  const filtrando = Boolean(filtroEstado || texto.trim());
+  /** Entregar un motor con saldo pendiente se pregunta antes. */
+  const avanzar = (r, siguiente) => {
+    const cob = cobranzaDe(r);
+    if (siguiente === 'entregado' && cob.total && cob.saldo > 0) {
+      setAEntregar(r);
+      return;
+    }
+    cambiar(r.id, siguiente);
+  };
+
+  const filtrosPuestos = Object.values(filtros).filter(Boolean).length;
+  const filtrando = Boolean(filtrosPuestos || texto.trim() || vista !== 'taller');
+  const porCobrar = reparaciones.reduce((s, r) => {
+    const c = cobranzaDe(r);
+    return s + (c.total && c.saldo > 0 ? c.saldo : 0);
+  }, 0);
 
   return (
     <div>
       <div className="pantalla-header">
         <div>
           <h2 className="pantalla-titulo">Reparaciones</h2>
-          <p className="pantalla-sub">Que motor de quien, en que estado y desde cuando</p>
+          <p className="pantalla-sub">Que motor de quien, en que estado y cuanto falta cobrar</p>
         </div>
         {esEditor && (
           <button type="button" className="btn btn-primary"
-            onClick={() => abrirFormulario({ ...VACIA })}>
+            onClick={() => abrirFormulario({ ...VACIA, ingreso: hoyIso() })}>
             <Plus size={16} /> Nueva orden
           </button>
         )}
@@ -163,107 +230,68 @@ const Reparaciones = () => {
             </button>
           )}
         </div>
-      </div>
 
-      <div className="chips" role="group" aria-label="Filtrar por estado">
-        {/* "En el taller" es el filtro por defecto y el que se usa: son
-            las ordenes que tienen un motor fisico esperando. */}
-        <button type="button" aria-pressed={soloAbiertas && !filtroEstado}
-          className={`chip${soloAbiertas && !filtroEstado ? ' activo' : ''}`}
-          onClick={() => { setSoloAbiertas(true); setFiltroEstado(''); }}>
-          En el taller
-        </button>
-        <button type="button" aria-pressed={!soloAbiertas && !filtroEstado}
-          className={`chip${!soloAbiertas && !filtroEstado ? ' activo' : ''}`}
-          onClick={() => { setSoloAbiertas(false); setFiltroEstado(''); }}>
-          Todas
-        </button>
-        {ESTADOS.map((e) => (
-          <button key={e} type="button" aria-pressed={filtroEstado === e}
-            className={`chip${filtroEstado === e ? ' activo' : ''}`}
-            onClick={() => setFiltroEstado(filtroEstado === e ? '' : e)}>
-            {ETIQUETA_ESTADO[e]}
+        <div className="icono-btn-wrap">
+          <button type="button" aria-label="Mas filtros" aria-expanded={verFiltros}
+            className={`icono-btn${verFiltros || filtrosPuestos ? ' icono-btn--activo' : ''}`}
+            onClick={() => setVerFiltros((v) => !v)}>
+            <SlidersHorizontal size={17} />
           </button>
-        ))}
+          {filtrosPuestos > 0 && <span className="icono-btn__punto">{filtrosPuestos}</span>}
+        </div>
       </div>
 
-      {editando && (
-        <form onSubmit={guardar} className="seccion" style={{ marginBottom: '16px' }}>
-          <div className="seccion__cab">
-            <div style={{ flex: 1 }}>
-              <h3 className="seccion__titulo">
-                {editando.id ? `Orden #${editando.numero}` : 'Nueva orden'}
-              </h3>
-            </div>
-            <button type="button" onClick={() => setEditando(null)} aria-label="Cerrar"
-              className="icono-btn">
-              <X size={18} />
+      <div className="chips" role="group" aria-label="Vista de la lista">
+        {VISTAS.map((v) => {
+          // Con un filtro exacto puesto, la vista deja de mandar y
+          // ninguna se muestra activa: la lista es la del filtro.
+          const activa = vista === v.id && !filtrosPuestos;
+          const esDeudores = v.id === 'deudores';
+          return (
+            <button key={v.id} type="button" aria-pressed={activa}
+              className={`chip${activa ? ' activo' : ''}${esDeudores && deudores > 0 ? ' chip--alerta' : ''}`}
+              onClick={() => { setVista(v.id); setFiltros(FILTROS_VACIOS); }}>
+              {v.etiqueta}
+              {esDeudores && deudores > 0 && <span className="chip__punto">{deudores}</span>}
             </button>
-          </div>
+          );
+        })}
+      </div>
 
-          <div className="datos">
+      {verFiltros && (
+        <div className="panel-filtros">
+          <div className="panel-filtros__grilla">
             <div>
-              <label className="campo-label" htmlFor="r-cliente">
-                Cliente{!editando.id && ' *'}
-              </label>
-              <select id="r-cliente" className="ui-input" required={!editando.id}
-                value={editando.cliente_id ?? ''}
-                onChange={(e) => setEditando({ ...editando, cliente_id: e.target.value })}>
-                <option value="">{editando.id ? 'Sin asignar' : 'Elegi un cliente'}</option>
-                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="campo-label" htmlFor="r-motor">Ficha del motor</label>
-              <select id="r-motor" className="ui-input" value={editando.motor_id ?? ''}
-                onChange={(e) => setEditando({ ...editando, motor_id: e.target.value })}>
-                <option value="">Sin ficha — se vincula despues</option>
-                {motores.map((m) => (
-                  <option key={m.id} value={m.id}>#{m.nro_motor} — {m.descripcion}</option>
+              <label className="campo-label" htmlFor="f-estado">Estado</label>
+              <select id="f-estado" value={filtros.estado}
+                onChange={(e) => setFiltros((f) => ({ ...f, estado: e.target.value }))}>
+                <option value="">Cualquiera</option>
+                {ESTADOS.map((e2) => (
+                  <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="campo-label" htmlFor="r-estado">Estado</label>
-              <select id="r-estado" className="ui-input" value={editando.estado}
-                onChange={(e) => setEditando({ ...editando, estado: e.target.value })}>
-                {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="campo-label" htmlFor="r-ingreso">Ingreso</label>
-              <input id="r-ingreso" type="date" className="ui-input" value={editando.ingreso ?? ''}
-                onChange={(e) => setEditando({ ...editando, ingreso: e.target.value })} />
-            </div>
+            {esEditor && (
+              <div>
+                <label className="campo-label" htmlFor="f-pago">Cobranza</label>
+                <select id="f-pago" value={filtros.pago}
+                  onChange={(e) => setFiltros((f) => ({ ...f, pago: e.target.value }))}>
+                  <option value="">Cualquiera</option>
+                  {['impago', 'parcial', 'pagado', 'sin_importe'].map((p) => (
+                    <option key={p} value={p}>{ETIQUETA_ESTADO_PAGO[p]}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
-          <div style={{ marginTop: '14px' }}>
-            <label className="campo-label" htmlFor="r-problema">Problema declarado</label>
-            <textarea id="r-problema" rows={2} className="ui-input"
-              style={{ resize: 'vertical' }}
-              value={editando.problema ?? ''}
-              onChange={(e) => setEditando({ ...editando, problema: e.target.value })}
-              placeholder="Ej: Hace ruido y no arranca" />
-          </div>
-
-          <div style={{ marginTop: '12px' }}>
-            <label className="campo-label" htmlFor="r-notas">Notas internas</label>
-            <textarea id="r-notas" rows={2} className="ui-input"
-              style={{ resize: 'vertical' }}
-              value={editando.notas ?? ''}
-              onChange={(e) => setEditando({ ...editando, notas: e.target.value })}
-              placeholder="No se muestran en la consulta publica de estado" />
-          </div>
-
-          <div className="acciones">
-            <button type="button" className="btn btn-secondary" onClick={() => setEditando(null)}>
-              Cancelar
+          {filtrosPuestos > 0 && (
+            <button type="button" className="btn btn-secondary" style={{ marginTop: '13px' }}
+              onClick={() => setFiltros(FILTROS_VACIOS)}>
+              Quitar filtros
             </button>
-            <Button type="submit" variant="primary" isLoading={guardando}>
-              {editando.id ? 'Guardar' : 'Crear orden'}
-            </Button>
-          </div>
-        </form>
+          )}
+        </div>
       )}
 
       {cargando ? (
@@ -281,8 +309,11 @@ const Reparaciones = () => {
         <ul className="lista">
           {reparaciones.map((r) => {
             const siguiente = SIGUIENTE_ESTADO[r.estado];
+            const cob = cobranzaDe(r);
+            const alerta = alertaCobro(r);
+            const pago = resumenPago(r, pesos);
             return (
-              <li key={r.id} className="fila">
+              <li key={r.id} className={`fila${alerta ? ' fila--alerta' : ''}`}>
                 <Link to={`/sistema/reparaciones/${r.id}`} className="fila-link">
                   <div className="fila-encabezado">
                     <span className="fila-titulo">
@@ -296,14 +327,28 @@ const Reparaciones = () => {
                       ? `#${r.motor.nro_motor} ${r.motor.descripcion}`
                       : 'Sin ficha asociada'}
                     {' · '}
-                    {new Date(r.ingreso).toLocaleDateString('es-AR')}
+                    {cuando(r)}
                   </div>
 
                   <div className="fila-etiquetas">
                     <span className="etiqueta"
                       style={{ color: COLOR_ESTADO[r.estado], borderColor: 'currentColor' }}>
+                      <span className="etiqueta__punto" aria-hidden="true" />
                       {ETIQUETA_ESTADO[r.estado]}
                     </span>
+
+                    {pago && (alerta ? (
+                      <span className="etiqueta etiqueta--alerta">
+                        <AlertTriangle size={12} aria-hidden="true" />
+                        {pago.texto}
+                      </span>
+                    ) : (
+                      <span className="etiqueta"
+                        style={{ color: COLOR_ESTADO_PAGO[cob.estado], borderColor: 'currentColor' }}>
+                        <span className="etiqueta__punto" aria-hidden="true" />
+                        {pago.texto}
+                      </span>
+                    ))}
                   </div>
                 </Link>
 
@@ -314,8 +359,13 @@ const Reparaciones = () => {
                           toca; va primero y con su nombre, no como una
                           lista de seis donde hay que buscar cual sigue. */}
                       {siguiente && (
-                        <ItemMenu onClick={() => cambiar(r.id, siguiente)} icono={ArrowRight}>
+                        <ItemMenu onClick={() => avanzar(r, siguiente)} icono={ArrowRight}>
                           Marcar {ETIQUETA_ESTADO[siguiente].toLowerCase()}
+                        </ItemMenu>
+                      )}
+                      {cob.saldo > 0 && (
+                        <ItemMenu onClick={() => setCobrando(r)} icono={Wallet}>
+                          Registrar pago
                         </ItemMenu>
                       )}
                       <ItemMenu onClick={() => abrirFormulario({
@@ -341,7 +391,98 @@ const Reparaciones = () => {
       {reparaciones.length > 0 && (
         <div className="contador">
           {reparaciones.length} {reparaciones.length === 1 ? 'orden' : 'ordenes'}
+          {porCobrar > 0 && ` · ${pesos(porCobrar)} sin cobrar`}
         </div>
+      )}
+
+      {editando && (
+        <Hoja
+          titulo={editando.id ? `Orden #${editando.numero}` : 'Nueva orden'}
+          ayuda={editando.id ? null : 'El motor entra a nombre de un cliente. La ficha tecnica se puede vincular despues.'}
+          onCerrar={() => setEditando(null)}
+          pie={(
+            <>
+              <button type="button" className="btn btn-secondary" onClick={() => setEditando(null)}>
+                Cancelar
+              </button>
+              {/* `form` conecta el boton con el formulario aunque este
+                  fuera de el: asi el pie queda fijo abajo y Enter sigue
+                  guardando. */}
+              <Button type="submit" form="form-orden" variant="primary" isLoading={guardando}>
+                {editando.id ? 'Guardar' : 'Crear orden'}
+              </Button>
+            </>
+          )}
+        >
+          <form id="form-orden" onSubmit={guardar} className="hoja__form">
+            {error ? <Alert variant="error" className="mb-3">{error}</Alert> : null}
+
+            <div className="campo-grupo">
+              <label className="campo-label" htmlFor="r-cliente">
+                Cliente{!editando.id && ' *'}
+              </label>
+              <select id="r-cliente" className="ui-input" required={!editando.id}
+                value={editando.cliente_id ?? ''}
+                onChange={(e) => setEditando({ ...editando, cliente_id: e.target.value })}>
+                <option value="">{editando.id ? 'Sin asignar' : 'Elegi un cliente'}</option>
+                {clientes.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+              </select>
+            </div>
+
+            <div className="campo-grupo">
+              <label className="campo-label" htmlFor="r-motor">Ficha del motor</label>
+              <select id="r-motor" className="ui-input" value={editando.motor_id ?? ''}
+                onChange={(e) => setEditando({ ...editando, motor_id: e.target.value })}>
+                <option value="">Sin ficha — se vincula despues</option>
+                {motores.map((m) => (
+                  <option key={m.id} value={m.id}>#{m.nro_motor} — {m.descripcion}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="campo-par">
+              <div>
+                <label className="campo-label" htmlFor="r-estado">Estado</label>
+                <select id="r-estado" className="ui-input" value={editando.estado}
+                  onChange={(e) => setEditando({ ...editando, estado: e.target.value })}>
+                  {ESTADOS.map((e2) => <option key={e2} value={e2}>{ETIQUETA_ESTADO[e2]}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="campo-label" htmlFor="r-ingreso">Ingreso</label>
+                <input id="r-ingreso" type="date" className="ui-input" value={editando.ingreso ?? ''}
+                  onChange={(e) => setEditando({ ...editando, ingreso: e.target.value })} />
+              </div>
+            </div>
+
+            <div className="campo-grupo">
+              <label className="campo-label" htmlFor="r-problema">Problema declarado</label>
+              <textarea id="r-problema" rows={2} className="ui-input"
+                style={{ resize: 'vertical' }}
+                value={editando.problema ?? ''}
+                onChange={(e) => setEditando({ ...editando, problema: e.target.value })}
+                placeholder="Ej: Hace ruido y no arranca" />
+            </div>
+
+            <div className="campo-grupo">
+              <label className="campo-label" htmlFor="r-notas">Notas internas</label>
+              <textarea id="r-notas" rows={2} className="ui-input"
+                style={{ resize: 'vertical' }}
+                value={editando.notas ?? ''}
+                onChange={(e) => setEditando({ ...editando, notas: e.target.value })}
+                placeholder="No se muestran en la consulta publica de estado" />
+            </div>
+          </form>
+        </Hoja>
+      )}
+
+      {cobrando && (
+        <HojaPago
+          reparacion={cobrando}
+          saldo={cobranzaDe(cobrando).saldo}
+          onCerrar={() => setCobrando(null)}
+          onListo={async () => { setCobrando(null); await refrescar(); }}
+        />
       )}
 
       <Modal
@@ -349,13 +490,31 @@ const Reparaciones = () => {
         type="danger"
         title="Eliminar orden"
         message={`Se elimina la orden #${aBorrar?.numero}. La ficha del motor y el cliente se conservan.`}
+        confirmLabel="Eliminar"
         onClose={() => setABorrar(null)}
         onConfirm={async () => {
           try {
             await eliminarReparacion(aBorrar.id);
-            await buscar(filtroEstado, soloAbiertas, texto);
+            await refrescar();
           } catch (e) { setError(e.message); }
           setABorrar(null);
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(aEntregar)}
+        type="danger"
+        title="Entregar sin cobrar"
+        message={`La orden #${aEntregar?.numero} queda con un saldo de ${pesos(cobranzaDe(aEntregar ?? {}).saldo)}. Una vez que el motor sale del taller, cobrar es mas dificil.`}
+        confirmLabel="Entregar igual"
+        cancelLabel="Registrar pago"
+        // El boton de la izquierda no es "volver": es el camino que casi
+        // siempre corresponde. Cobrar y despues entregar.
+        onClose={() => { setCobrando(aEntregar); setAEntregar(null); }}
+        onConfirm={async () => {
+          const r = aEntregar;
+          setAEntregar(null);
+          await cambiar(r.id, 'entregado');
         }}
       />
     </div>

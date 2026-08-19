@@ -5,8 +5,15 @@
  * intermedio: bajar la foto, subirla al bucket, crear la fila y llamar a
  * extraer-ficha. Es posible porque extraer-ficha procesa de punto a punto
  * ANTES de responder --no dispara y se olvida, como hace la web-- asi que
- * aca alcanza con esperar esa respuesta. Los 150s de una Edge Function
- * sobran para los 15-40s que tarda la lectura.
+ * aca alcanza con esperar esa respuesta.
+ *
+ * Pero esta funcion tiene su propio limite de 150s de reloj, y arranca a
+ * gastarlo antes que la otra: para cuando llama a extraer-ficha ya bajo
+ * la foto de Telegram y la subio al bucket. Si esperara sin techo, la
+ * lectura podria terminar bien del otro lado y este proceso morir sin
+ * contestarle nunca a quien mando la foto. Por eso la espera se corta
+ * antes y el mensaje explica donde quedo: la fila ya existe y la lectura
+ * sigue igual, se recupera desde el sistema.
  *
  * NUNCA crea el motor. Igual que en la web, el resultado queda en estado
  * 'revision' y una persona lo confirma desde el sistema. Un bobinado mal
@@ -73,15 +80,34 @@ export async function procesarFoto(
   const url = Deno.env.get('SUPABASE_URL')!;
   const servicio = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-  const r = await fetch(`${url}/functions/v1/extraer-ficha`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${servicio}`,
-      apikey: servicio,
-    },
-    body: JSON.stringify({ extraccion_id: fila.id, usuario_id: perfil.id }),
-  });
+  const appUrl = Deno.env.get('APP_URL');
+  const linkRevisar = appUrl
+    ? `\n\n<a href="${appUrl}/sistema/motores/nuevo?ficha=${fila.id}">Abrir en el sistema</a>`
+    : '\n\nEntrá a Motores → Nueva ficha, esa lectura te va a estar esperando.';
+
+  let r: Response;
+  try {
+    r = await fetch(`${url}/functions/v1/extraer-ficha`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${servicio}`,
+        apikey: servicio,
+      },
+      body: JSON.stringify({ extraccion_id: fila.id, usuario_id: perfil.id }),
+      // extraer-ficha se corta sola a los 120s y siempre deja la fila en
+      // un estado final, asi que 135 alcanzan para su respuesta y dejan
+      // margen para contestarle a Telegram antes de que maten a esta.
+      signal: AbortSignal.timeout(135_000),
+    });
+  } catch (e) {
+    console.error(`extraer-ficha no contesto para ${fila.id}:`, e);
+    return {
+      extraccionId: fila.id,
+      texto: 'Guardé la foto pero la lectura está tardando de más. '
+        + `Sigue corriendo del lado del servidor.${linkRevisar}`,
+    };
+  }
 
   const resultado = await r.json().catch(() => ({}));
 
@@ -94,20 +120,20 @@ export async function procesarFoto(
   }
 
   if (!r.ok || !resultado?.estado) {
+    // La foto quedo subida igual: desde el sistema se reintenta la
+    // lectura sin volver a sacarla, que es lo que importa si el motor ya
+    // esta desarmado en el banco.
     return {
       extraccionId: fila.id,
-      texto: 'Se subió la foto pero la lectura falló. Probá de nuevo en un rato, '
-        + 'o cargala a mano desde el sistema.',
+      texto: 'Se subió la foto pero la lectura falló. Se puede reintentar '
+        + `sin volver a sacarla.${linkRevisar}`,
     };
   }
-
-  const appUrl = Deno.env.get('APP_URL');
-  const link = appUrl ? `\n\n<a href="${appUrl}/sistema/motores/nuevo?ficha=${fila.id}">Abrir para revisar</a>` : '';
 
   return {
     extraccionId: fila.id,
     texto: `Listo, leí <b>${resultado.lineas ?? 0}</b> dato(s) de la ficha.\n\n`
       + `Como siempre, nada se guarda solo: entrá al sistema y confirmá antes de que quede cargada.`
-      + `${link}${appUrl ? '' : '\n\nEntrá a Motores → Nueva ficha, esa lectura te va a estar esperando.'}`,
+      + `${linkRevisar}`,
   };
 }

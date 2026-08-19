@@ -1,142 +1,151 @@
 /**
- * Cliente del Afip SDK (app.afipsdk.com) para hablar con los webservices
- * de ARCA (ex AFIP) sin implementar WSAA/WSFEv1 propios.
+ * La frontera con ARCA (ex AFIP).
+ *
+ * Es lo unico que conocen `factura-emitir` y `factura-reconciliar`:
+ * cinco funciones que no cambiaron de firma cuando abajo se reemplazo un
+ * intermediario por WSAA y WSFEv1 propios.
  *
  * Vive en `deno/` por la misma razon que pdf-comprobante.ts: hace
- * fetch() a un servicio externo y lee secretos de Deno.env, y ademas
- * escribe en `arca_token` con la service_role. Nada de esto debe
- * importarse desde `apps/web`.
+ * fetch() a un servicio externo, lee secretos de Deno.env y escribe en
+ * `arca_token` con la service_role. Nada de esto debe importarse desde
+ * `apps/web`.
  *
- * Contrato verificado contra docs.afipsdk.com/integracion/api:
+ * ---------------------------------------------------------------
+ * Dos vias, un solo camino de datos
  *
- *   POST /v1/afip/auth
- *     body: { environment, tax_id, wsid, cert?, key? }
- *     header: Authorization: Bearer <ACCESS_TOKEN>
- *     -> { token, sign, expiration }
+ *   ARCA_VIA=propio (default)  wsaa.ts + wsfe.ts, SOAP directo
+ *   ARCA_VIA=sdk               sdk.ts, via app.afipsdk.com
  *
- *   POST /v1/afip/requests
- *     body: { environment, method, wsid, params }
- *     header: Authorization: Bearer <ACCESS_TOKEN>
- *     -> la respuesta cruda del webservice pedido
+ * La segunda existe para poder comparar y para poder volver atras
+ * cambiando un secret. Las dos entregan la respuesta con la misma forma
+ * y la LEEN con las mismas funciones de `../wsfe-xml.js`: si algun dia
+ * difieren, la diferencia esta en el transporte, no en como se
+ * interpreta lo que dijo ARCA.
  *
- * `token`/`sign` son el TA que da ARCA y hay que reenviarlo en
- * `params.Auth` de cada llamada a un webservice. El TA vale unas 12
- * horas; pedir uno nuevo mientras el anterior sigue vivo hace que AFIP
- * conteste "El CEE ya posee un TA valido", asi que se cachea en la
- * tabla `arca_token` y se renueva solo cuando esta por vencer.
+ * ---------------------------------------------------------------
+ * El cache del ticket
+ *
+ * El TA vale unas 12 horas y ARCA no entrega dos validos a la vez: pedir
+ * uno nuevo mientras el anterior vive contesta "El CEE ya posee un TA
+ * valido". Por eso se guarda en `arca_token` y se renueva recien cuando
+ * le quedan menos de 10 minutos.
+ *
+ * La fila esta partida por entorno y ademas se compara el CUIT: un
+ * ticket de homologacion no sirve en produccion, y uno emitido para el
+ * CUIT de pruebas del SDK no sirve para el CUIT del taller. Las dos
+ * confusiones son faciles de provocar cambiando un secret, y las dos dan
+ * errores que no hablan del ticket.
  */
 
-const BASE = 'https://app.afipsdk.com/api/v1/afip';
+import * as wsaa from './wsaa.ts';
+import * as wsfe from './wsfe.ts';
+import * as sdk from './sdk.ts';
+import {
+  fechaArca, leerFecae, leerUltimoAutorizado, leerConsulta,
+} from '../wsfe-xml.js';
+
+export { fechaArca };
 
 export interface ContextoArca {
-  /** 'dev' usa el CUIT de pruebas del SDK sin certificado propio. */
+  /** 'dev' es homologacion. */
   environment: 'dev' | 'prod';
+  via: 'propio' | 'sdk';
   cuit: string;
   cert?: string;
   key?: string;
-  accessToken: string;
+  accessToken?: string;
 }
 
 function leerContextoArca(): ContextoArca {
   const environment = Deno.env.get('ARCA_PRODUCCION') === 'true' ? 'prod' : 'dev';
-  const accessToken = Deno.env.get('AFIPSDK_ACCESS_TOKEN');
+  const via = Deno.env.get('ARCA_VIA') === 'sdk' ? 'sdk' : 'propio';
   const cuit = Deno.env.get('ARCA_CUIT');
+  const cert = Deno.env.get('ARCA_CERT') || undefined;
+  const key = Deno.env.get('ARCA_KEY') || undefined;
+  const accessToken = Deno.env.get('AFIPSDK_ACCESS_TOKEN') || undefined;
 
-  if (!accessToken) throw new Error('Falta el secret AFIPSDK_ACCESS_TOKEN.');
   if (!cuit) throw new Error('Falta el secret ARCA_CUIT.');
 
-  return {
-    environment,
-    cuit,
-    cert: Deno.env.get('ARCA_CERT') ?? undefined,
-    key: Deno.env.get('ARCA_KEY') ?? undefined,
-    accessToken,
-  };
-}
-
-async function pedirTa(ctx: ContextoArca) {
-  const resp = await fetch(`${BASE}/auth`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${ctx.accessToken}`,
-    },
-    body: JSON.stringify({
-      environment: ctx.environment,
-      tax_id: ctx.cuit,
-      wsid: 'wsfe',
-      ...(ctx.cert ? { cert: ctx.cert, key: ctx.key } : {}),
-    }),
-  });
-
-  if (!resp.ok) {
-    const texto = await resp.text().catch(() => '');
-    throw new Error(`No se pudo autenticar contra ARCA (${resp.status}): ${texto}`);
+  if (via === 'sdk') {
+    if (!accessToken) throw new Error('Falta el secret AFIPSDK_ACCESS_TOKEN.');
+  } else if (!cert || !key) {
+    // Con la via propia no hay certificado prestado: sin el certificado
+    // del taller no hay forma de firmar el ticket de acceso.
+    throw new Error(
+      'Faltan los secrets ARCA_CERT y ARCA_KEY. Se sacan en WSASS para homologacion '
+      + 'o en Administracion de Certificados Digitales para produccion.',
+    );
   }
 
-  return resp.json() as Promise<{ token: string; sign: string; expiration: string }>;
+  return { environment, via, cuit, cert, key, accessToken };
 }
 
+const esProduccion = (ctx: ContextoArca) => ctx.environment === 'prod';
+
 /**
- * Devuelve un TA valido, del cache si todavia le queda margen o uno
- * nuevo si no. `admin` es el cliente de Supabase con service_role: esta
- * tabla no tiene policies, asi que solo la Edge Function puede tocarla.
+ * Un TA valido: el de la tabla si todavia le queda margen, o uno nuevo.
+ * `admin` es el cliente con service_role, que es el unico que puede
+ * tocar `arca_token` (la tabla no tiene policies).
  */
 export async function obtenerTicket(admin: any, ctx: ContextoArca) {
   const { data: cache } = await admin
-    .from('arca_token').select('*').eq('servicio', 'wsfe').maybeSingle();
+    .from('arca_token').select('*')
+    .eq('servicio', 'wsfe').eq('entorno', ctx.environment)
+    .maybeSingle();
 
-  const vigente = cache && new Date(cache.expira_en).getTime() > Date.now() + 10 * 60 * 1000;
-  if (vigente) return { token: cache.token, sign: cache.sign };
+  const vigente = cache
+    && cache.cuit === ctx.cuit
+    && new Date(cache.expira_en).getTime() > Date.now() + 10 * 60 * 1000;
+  if (vigente) return { token: cache.token, sign: cache.sign, cuit: ctx.cuit };
 
-  const ta = await pedirTa(ctx);
+  let ta;
+  try {
+    ta = ctx.via === 'sdk'
+      ? await sdk.pedirTicketSdk(ctx as sdk.ContextoSdk)
+      : await wsaa.pedirTicketAcceso('wsfe', {
+        cert: ctx.cert!, key: ctx.key!, produccion: esProduccion(ctx),
+      });
+  } catch (e) {
+    // Los ultimos 10 minutos de vida del ticket son una zona gris: para
+    // nosotros ya no sirve --no queremos empezar una emision con un
+    // ticket a punto de morir-- pero para ARCA sigue vivo, y entonces se
+    // niega a dar otro. Ahi lo correcto es seguir usando el que hay.
+    const yaHayUno = /ya posee un ta/i.test((e as Error).message ?? '');
+    if (yaHayUno && cache?.cuit === ctx.cuit
+        && new Date(cache.expira_en).getTime() > Date.now()) {
+      return { token: cache.token, sign: cache.sign, cuit: ctx.cuit };
+    }
+    throw e;
+  }
+
   await admin.from('arca_token').upsert({
     servicio: 'wsfe',
+    entorno: ctx.environment,
+    cuit: ctx.cuit,
     token: ta.token,
     sign: ta.sign,
-    expira_en: ta.expiration,
+    // Sin vencimiento declarado se asume corto: mejor pedir de mas que
+    // usar un ticket muerto y no entender por que rebota todo.
+    expira_en: ta.expiracion ?? new Date(Date.now() + 60 * 60 * 1000).toISOString(),
     actualizado_en: new Date().toISOString(),
-  });
+  }, { onConflict: 'servicio,entorno' });
 
-  return { token: ta.token, sign: ta.sign };
-}
-
-async function llamarWsfe(admin: any, ctx: ContextoArca, method: string, params: Record<string, unknown>) {
-  const { token, sign } = await obtenerTicket(admin, ctx);
-
-  const resp = await fetch(`${BASE}/requests`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${ctx.accessToken}`,
-    },
-    body: JSON.stringify({
-      environment: ctx.environment,
-      method,
-      wsid: 'wsfe',
-      params: {
-        Auth: { Token: token, Sign: sign, Cuit: ctx.cuit },
-        ...params,
-      },
-    }),
-  });
-
-  const cuerpo = await resp.json().catch(() => null);
-  if (!resp.ok) {
-    throw new Error(`ARCA respondio ${resp.status} en ${method}: ${JSON.stringify(cuerpo)}`);
-  }
-  return cuerpo;
+  return { token: ta.token, sign: ta.sign, cuit: ctx.cuit };
 }
 
 /** Ultimo numero autorizado para un tipo de comprobante y punto de venta. */
 export async function fecompUltimoAutorizado(
   admin: any, ctx: ContextoArca, ptoVta: number, cbteTipo: number,
 ): Promise<number> {
-  const r = await llamarWsfe(admin, ctx, 'FECompUltimoAutorizado', {
-    PtoVta: ptoVta,
-    CbteTipo: cbteTipo,
-  });
-  return Number(r?.CbteNro ?? 0);
+  const auth = await obtenerTicket(admin, ctx);
+
+  if (ctx.via === 'sdk') {
+    const r = await sdk.llamarSdk(ctx as sdk.ContextoSdk, auth, 'FECompUltimoAutorizado', {
+      PtoVta: ptoVta, CbteTipo: cbteTipo,
+    });
+    return leerUltimoAutorizado(r);
+  }
+  return wsfe.ultimoAutorizado(auth, ptoVta, cbteTipo, esProduccion(ctx));
 }
 
 export interface DetalleFeCae {
@@ -163,6 +172,10 @@ export interface ResultadoFeCae {
   caeVencimiento: string | null;
   observaciones: unknown;
   errores: unknown;
+  /** La respuesta entera, para el caso en que no venga ni CAE ni error.
+   *  Sin esto, un cambio de forma del otro lado se ve como un rechazo
+   *  vacio y no queda rastro de que contesto ARCA en realidad. */
+  crudo: unknown;
 }
 
 /** Pide el CAE para UN comprobante (CantReg siempre 1: el taller emite
@@ -171,80 +184,34 @@ export async function fecaeSolicitar(
   admin: any, ctx: ContextoArca,
   ptoVta: number, cbteTipo: number, detalle: DetalleFeCae,
 ): Promise<ResultadoFeCae> {
-  const r = await llamarWsfe(admin, ctx, 'FECAESolicitar', {
-    FeCAEReq: {
-      FeCabReq: { CantReg: 1, PtoVta: ptoVta, CbteTipo: cbteTipo },
-      FeDetReq: {
-        FECAEDetRequest: {
-          Concepto: detalle.concepto,
-          DocTipo: detalle.docTipo,
-          DocNro: detalle.docNro,
-          CbteDesde: detalle.cbteDesde,
-          CbteHasta: detalle.cbteHasta,
-          CbteFch: detalle.cbteFch,
-          FchServDesde: detalle.servDesde ?? undefined,
-          FchServHasta: detalle.servHasta ?? undefined,
-          FchVtoPago: detalle.vtoPago ?? undefined,
-          ImpTotal: detalle.impTotal,
-          ImpTotConc: 0,
-          ImpNeto: detalle.impNeto,
-          ImpOpEx: 0,
-          ImpIVA: detalle.impIva,
-          ImpTrib: 0,
-          MonId: detalle.moneda,
-          MonCotiz: detalle.cotizacion,
-          CondicionIVAReceptorId: detalle.condicionIvaReceptorId,
-        },
-      },
-    },
-  });
+  const auth = await obtenerTicket(admin, ctx);
 
-  const cabecera = r?.FeCabResp;
-  const det = r?.FeDetResp?.FECAEDetResponse?.[0] ?? r?.FeDetResp?.FECAEDetResponse;
-  const errores = r?.Errors ?? det?.Errors ?? null;
-  const observaciones = det?.Observaciones ?? null;
-
-  return {
-    resultado: (det?.Resultado ?? cabecera?.Resultado ?? 'R') as 'A' | 'R' | 'P',
-    cae: det?.CAE ?? null,
-    caeVencimiento: formatearFechaArca(det?.CAEFchVto),
-    observaciones,
-    errores,
-  };
+  if (ctx.via === 'sdk') {
+    const r = await sdk.llamarSdk(ctx as sdk.ContextoSdk, auth, 'FECAESolicitar',
+      sdk.paramsFecaeSdk(ptoVta, cbteTipo, detalle));
+    return leerFecae(r) as ResultadoFeCae;
+  }
+  return wsfe.solicitarCae(auth, ptoVta, cbteTipo, detalle, esProduccion(ctx)) as Promise<ResultadoFeCae>;
 }
 
-/** Reconciliacion: le pregunta a ARCA por un comprobante ya numerado,
- *  para el caso en que la respuesta de FECAESolicitar se perdio antes
- *  de llegar a confirmar_factura(). Nunca se vuelve a pedir un CAE para
- *  un numero que ya se intento: solo se consulta. */
+/**
+ * Reconciliacion: le pregunta a ARCA por un comprobante ya numerado,
+ * para el caso en que la respuesta de FECAESolicitar se perdio antes de
+ * llegar a confirmar_factura(). Nunca se vuelve a pedir un CAE para un
+ * numero que ya se intento: solo se consulta.
+ */
 export async function fecompConsultar(
   admin: any, ctx: ContextoArca, ptoVta: number, cbteTipo: number, numero: number,
 ) {
-  const r = await llamarWsfe(admin, ctx, 'FECompConsultar', {
-    FeCompConsReq: { CbteTipo: cbteTipo, CbteNro: numero, PtoVta: ptoVta },
-  });
+  const auth = await obtenerTicket(admin, ctx);
 
-  const det = r?.ResultGet;
-  if (!det || !det.CodAutorizacion) return null;
-
-  return {
-    cae: String(det.CodAutorizacion),
-    caeVencimiento: formatearFechaArca(det.FchVto),
-  };
-}
-
-/** ARCA devuelve fechas como "20260812"; Postgres quiere "2026-08-12". */
-function formatearFechaArca(v: string | null | undefined): string | null {
-  if (!v || v.length !== 8) return null;
-  return `${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}`;
-}
-
-export function fechaArca(d: string | Date): string {
-  const dt = typeof d === 'string' ? new Date(d) : d;
-  const y = dt.getUTCFullYear();
-  const m = String(dt.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(dt.getUTCDate()).padStart(2, '0');
-  return `${y}${m}${day}`;
+  if (ctx.via === 'sdk') {
+    const r = await sdk.llamarSdk(ctx as sdk.ContextoSdk, auth, 'FECompConsultar', {
+      FeCompConsReq: { CbteTipo: cbteTipo, CbteNro: numero, PtoVta: ptoVta },
+    });
+    return leerConsulta(r);
+  }
+  return wsfe.consultar(auth, ptoVta, cbteTipo, numero, esProduccion(ctx));
 }
 
 export { leerContextoArca };

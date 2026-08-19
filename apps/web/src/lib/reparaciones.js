@@ -45,30 +45,65 @@ export const SIGUIENTE_ESTADO = {
   terminado: 'entregado',
 };
 
-const SELECT = `
+/**
+ * Las vistas del listado.
+ *
+ * No son los seis estados del enum: son las cuatro preguntas que el
+ * taller se hace parado frente al banco. "Para entregar" y "Deudores"
+ * no existen como estado en ningun lado --son cruces de estado y
+ * cobranza-- y son justamente las dos listas que se miran todos los
+ * dias. Los estados sueltos siguen estando, en el panel de filtros.
+ */
+export const VISTAS = [
+  { id: 'taller', etiqueta: 'En el taller' },
+  { id: 'entregar', etiqueta: 'Para entregar' },
+  { id: 'deudores', etiqueta: 'Deudores' },
+  { id: 'entregadas', etiqueta: 'Entregadas' },
+  { id: 'todas', etiqueta: 'Todas' },
+];
+
+// La cobranza viene embebida y no como columnas de `reparacion` porque
+// es una tabla aparte, solo de editores: a un lector le vuelve vacia y
+// la pantalla se dibuja igual, sin importes.
+const armar = ({ clienteInner = false, cobranzaInner = false } = {}) => `
   id, numero, estado, ingreso, egreso, problema, diagnostico, notas, creado_en,
-  cliente:cliente_id (id, nombre, telefono),
-  motor:motor_id (id, nro_motor, descripcion, marca)
+  cliente:cliente_id${clienteInner ? '!inner' : ''} (id, nombre, telefono),
+  motor:motor_id (id, nro_motor, descripcion, marca),
+  cobranza${cobranzaInner ? '!inner' : ''} (importe, importe_doc, total, pagado, cobrado, saldo, estado)
 `;
 
-// PostgREST solo deja filtrar sobre una relacion embebida (`cliente.nombre`)
-// cuando esa relacion se pide como inner join. El resto de las pantallas
-// necesita el left join de siempre --una orden sin cliente tiene que
-// seguir apareciendo-- asi que la version !inner se arma aparte y solo se
-// usa cuando la busqueda es por texto.
-const SELECT_CON_CLIENTE_INNER = SELECT.replace('cliente:cliente_id (', 'cliente:cliente_id!inner(');
+const SELECT = armar();
 
-export async function listarReparaciones({ estado = '', texto = '', soloAbiertas = false } = {}) {
+/**
+ * @param {object} opciones
+ * @param {string} opciones.vista  una de VISTAS
+ * @param {string} opciones.estado estado exacto; pisa el de la vista
+ * @param {string} opciones.pago   estado de cobranza exacto
+ * @param {string} opciones.texto  numero de orden o apellido
+ */
+export async function listarReparaciones({
+  vista = 'todas', estado = '', pago = '', texto = '',
+} = {}) {
   const t = texto.trim();
   const esNumero = /^\d+$/.test(t);
+  // PostgREST solo deja filtrar sobre una relacion embebida cuando esa
+  // relacion se pide como inner join. El resto del tiempo van como left
+  // join: una orden sin cliente --o sin fila de cobranza-- tiene que
+  // seguir apareciendo en la lista.
   const buscaCliente = Boolean(t) && !esNumero;
+  const filtraPago = Boolean(pago) || vista === 'deudores';
 
   let q = supabase
     .from('reparacion')
-    .select(buscaCliente ? SELECT_CON_CLIENTE_INNER : SELECT, { count: 'exact' });
+    .select(armar({ clienteInner: buscaCliente, cobranzaInner: filtraPago }), { count: 'exact' });
 
   if (estado) q = q.eq('estado', estado);
-  else if (soloAbiertas) q = q.in('estado', ABIERTOS);
+  else if (vista === 'taller') q = q.in('estado', ABIERTOS);
+  else if (vista === 'entregar') q = q.eq('estado', 'terminado');
+  else if (vista === 'entregadas' || vista === 'deudores') q = q.eq('estado', 'entregado');
+
+  if (pago) q = q.eq('cobranza.estado', pago);
+  else if (vista === 'deudores') q = q.in('cobranza.estado', ['impago', 'parcial']);
 
   // Si es puramente numerico se busca por orden; si no, por cliente.
   // "12" es un numero de orden real, no el apellido de nadie.

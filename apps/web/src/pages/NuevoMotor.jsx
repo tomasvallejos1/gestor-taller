@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Camera, PencilLine, ScanLine, TriangleAlert,
+  ArrowLeft, Camera, PencilLine, RotateCw, ScanLine, TriangleAlert,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
-import Button from '../components/ui/Button';
 import { useEsMobile } from '../lib/useMediaQuery';
-import { cargarFichaPorFoto, seguirExtraccion, obtenerExtraccion } from '../lib/extraccion';
+import {
+  cargarFichaPorFoto, seguirExtraccion, obtenerExtraccion, reintentarExtraccion,
+} from '../lib/extraccion';
 import MotorForm from './MotorForm';
 import RevisarFicha from './RevisarFicha';
 
@@ -36,6 +37,10 @@ const NuevoMotor = () => {
 
   const [paso, setPaso] = useState(PASOS.ELEGIR);
   const [error, setError] = useState('');
+  // 'pendiente' = el servidor todavia no la agarro; 'procesando' = la
+  // esta leyendo. Antes las dos se veian igual y las dos parecian
+  // colgadas, que es justo lo que habia que poder distinguir.
+  const [estadoLectura, setEstadoLectura] = useState('pendiente');
   const entrada = useRef(null);
   const camara = useRef(null);
 
@@ -68,13 +73,15 @@ const NuevoMotor = () => {
     return seguirExtraccion(fichaId, (fila) => {
       if (fila.estado === 'error') {
         setError(fila.error ?? 'No se pudo leer la ficha. Probá con otra foto, mejor iluminada.');
-        setParams({}, { replace: true });
+        // La ficha se queda en la URL: la foto ya esta subida y paga, y
+        // sin el id no habria con que reintentar sin volver a sacarla.
+        setPaso(PASOS.ELEGIR);
       } else {
         // revision o confirmada: en los dos casos hay ficha que mirar.
         setPaso(PASOS.REVISAR);
       }
-    });
-  }, [paso, fichaId, setParams]);
+    }, { alProgreso: setEstadoLectura });
+  }, [paso, fichaId]);
 
   // Cuanto hace que esta esperando. Sirve para dejar de mentirle: pasado
   // cierto punto, "esperá un poco mas" es peor que decirle que algo raro
@@ -98,6 +105,7 @@ const NuevoMotor = () => {
 
     setPaso(PASOS.SUBIENDO);
     setError('');
+    setEstadoLectura('pendiente');
     try {
       const fila = await cargarFichaPorFoto(archivo);
       setParams({ ficha: fila.id }, { replace: true });
@@ -114,6 +122,28 @@ const NuevoMotor = () => {
     setPaso(PASOS.ELEGIR);
   }, [setParams]);
 
+  /**
+   * Vuelve a pedir la lectura de la foto que ya esta arriba.
+   *
+   * Antes, cuando una lectura fallaba, la unica salida era sacar la foto
+   * de nuevo y volver a subirla, con el motor desarmado en el banco. La
+   * foto no tenia nada malo: se habia caido el proveedor, o la corrida se
+   * habia pasado del limite de tiempo. Reintentar arranca directo en la
+   * parte que fallo.
+   */
+  const reintentar = useCallback(async () => {
+    if (!fichaId) return;
+    setError('');
+    setEstadoLectura('pendiente');
+    setPaso(PASOS.LEYENDO);
+    try {
+      await reintentarExtraccion(fichaId);
+    } catch (err) {
+      setError(err.message ?? 'No se pudo reintentar la lectura.');
+      setPaso(PASOS.ELEGIR);
+    }
+  }, [fichaId]);
+
   // ---------- Revision: la ficha ya leida, para confirmar o descartar ----------
   if (paso === PASOS.REVISAR && fichaId) {
     return <RevisarFicha id={fichaId} alSalir={volverAElegir} />;
@@ -127,9 +157,12 @@ const NuevoMotor = () => {
   // ---------- Trabajando ----------
   if (paso === PASOS.SUBIENDO || paso === PASOS.LEYENDO) {
     const subiendo = paso === PASOS.SUBIENDO;
-    // Una lectura normal tarda entre 15 y 40 segundos. Pasado el minuto y
-    // medio ya no es lentitud, y seguir mostrando "esperá" seria mentir.
-    const demorado = segundos > 90;
+    // El backend se corta solo a los 120s y siempre deja un resultado, asi
+    // que pasado eso hay respuesta si o si: la espera tiene final. Antes no
+    // lo tenia --se pasaba del limite de la Edge Function, la mataban y la
+    // pantalla giraba para siempre-- y por eso el aviso era una disculpa
+    // vaga en vez de un plazo.
+    const demorado = segundos > 75;
 
     return (
       <div style={{ maxWidth: '520px', margin: '0 auto', padding: esMobile ? '24px 0' : '64px 0' }}>
@@ -139,16 +172,19 @@ const NuevoMotor = () => {
           </div>
 
           <h2 style={{ fontSize: '1.2rem', margin: '22px 0 8px' }}>
-            {subiendo ? 'Subiendo la foto...' : demorado ? 'Está tardando más de lo normal' : 'Leyendo la ficha'}
+            {subiendo ? 'Subiendo la foto...'
+              : demorado ? 'Está tardando más de lo normal'
+              : estadoLectura === 'pendiente' ? 'Arrancando la lectura'
+              : 'Leyendo la ficha'}
           </h2>
 
           <p style={{ color: 'var(--text-light)', fontSize: '0.92rem', margin: 0, lineHeight: 1.55 }}>
             {subiendo && 'Un segundo, se está achicando y subiendo la imagen.'}
             {!subiendo && !demorado && (
-              'Suele tardar hasta medio minuto. Podés bloquear el celular: la lectura sigue del lado del servidor y te espera acá.'
+              'Suele tardar entre 25 y 45 segundos. Podés bloquear el celular: la lectura sigue del lado del servidor y te espera acá.'
             )}
             {!subiendo && demorado && (
-              'La foto ya está guardada y la lectura sigue corriendo. Podés seguir esperando, o volver y entrar más tarde desde la misma pantalla: no se pierde ni se vuelve a cobrar.'
+              'La foto ya está guardada. El servidor corta solo y avisa como muy tarde a los dos minutos, así que esta pantalla se va a mover sola: no hace falta que la mires. También podés volver y entrar más tarde desde acá mismo, no se pierde ni se vuelve a cobrar.'
             )}
           </p>
 
@@ -191,7 +227,22 @@ const NuevoMotor = () => {
         <h2 style={{ margin: 0, fontSize: '1.45rem' }}>Nueva ficha</h2>
       </div>
 
-      {error ? <Alert variant="error" className="mb-3">{error}</Alert> : null}
+      {error ? (
+        <Alert variant="error" className="mb-3">
+          <div>{error}</div>
+          {/* Con la ficha todavia en la URL, la foto sigue arriba: se puede
+              reintentar la lectura sin sacarla de nuevo. Que la falla haya
+              sido del proveedor no tiene por que costarle a alguien otra
+              vuelta al banco de trabajo. */}
+          {fichaId ? (
+            <button type="button" onClick={reintentar}
+              className="btn btn-secondary"
+              style={{ marginTop: '10px', fontSize: '0.86rem' }}>
+              <RotateCw size={14} /> Reintentar con la misma foto
+            </button>
+          ) : null}
+        </Alert>
+      ) : null}
 
       <p style={{ color: 'var(--text-light)', fontSize: '0.95rem', marginTop: 0, marginBottom: '18px' }}>
         ¿Cómo querés cargarla?

@@ -6,6 +6,43 @@ import { mapearLineas } from '@shared/mapeo-ficha.js';
 const BUCKET = 'fichas';
 
 /**
+ * Le pide al backend que lea la ficha, sin esperar la respuesta.
+ *
+ * La lectura tarda ~25-40 segundos y bloquear la interfaz todo ese rato
+ * no aporta nada: el estado se sigue por Realtime y por sondeo.
+ *
+ * Lo que si importa es el caso en que la llamada no llega a salir --el
+ * celular perdio la señal justo despues de crear la fila, que en un
+ * taller pasa seguido--. Antes eso solo dejaba un `console.error` y la
+ * fila quedaba en 'pendiente' para siempre, con la pantalla girando sin
+ * que nadie estuviera haciendo nada del otro lado.
+ *
+ * El update va condicionado a 'pendiente' a proposito: si la funcion si
+ * arranco, ya la paso a 'procesando' y este update no toca nada. Sin esa
+ * condicion, una respuesta perdida en la vuelta marcaria como fallida
+ * una lectura que en realidad esta corriendo bien.
+ */
+function dispararExtraccion(id) {
+  supabase.functions
+    .invoke('extraer-ficha', { body: { extraccion_id: id } })
+    .then(({ error }) => {
+      if (error) throw error;
+    })
+    .catch(async (e) => {
+      console.error('No se pudo disparar la extraccion:', e);
+      await supabase
+        .from('ficha_extraccion')
+        .update({
+          estado: 'error',
+          error: 'No se pudo empezar la lectura. La foto quedó guardada: '
+            + 'probá "Reintentar" cuando tengas señal.',
+        })
+        .eq('id', id)
+        .eq('estado', 'pendiente');
+    });
+}
+
+/**
  * Sube la foto de una ficha y dispara la extraccion.
  * Devuelve la fila de ficha_extraccion; el resultado llega despues,
  * por Realtime o por consulta.
@@ -16,30 +53,64 @@ export async function cargarFichaPorFoto(archivo, { origen = 'web' } = {}) {
   const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png';
   const ruta = `extracciones/${crypto.randomUUID()}.${extension}`;
 
-  const { error: errorSubida } = await supabase.storage
-    .from(BUCKET).upload(ruta, blob, { contentType: blob.type });
-  if (errorSubida) throw errorSubida;
+  // La ruta se conoce antes de subir, asi que la fila no tiene por que
+  // esperar al archivo: se hacen las dos cosas juntas y se ahorra una
+  // vuelta completa de red, que con datos moviles no es gratis.
+  const [subida, insercion] = await Promise.all([
+    supabase.storage.from(BUCKET).upload(ruta, blob, { contentType: blob.type }),
+    supabase.auth.getUser().then(({ data }) => supabase
+      .from('ficha_extraccion')
+      .insert({ storage_path: ruta, origen, creado_por: data?.user?.id })
+      .select()
+      .single()),
+  ]);
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  const { data: fila, error } = await supabase
-    .from('ficha_extraccion')
-    .insert({ storage_path: ruta, origen, creado_por: user?.id })
-    .select()
-    .single();
-
-  if (error) {
-    await supabase.storage.from(BUCKET).remove([ruta]);
-    throw error;
+  // Si una de las dos fallo, se limpia la otra: una fila sin archivo es
+  // una lectura que no va a poder correr nunca, y un archivo sin fila es
+  // basura que nadie va a encontrar para borrar.
+  if (subida.error || insercion.error) {
+    if (!insercion.error) {
+      await supabase.from('ficha_extraccion').delete().eq('id', insercion.data.id);
+    }
+    if (!subida.error) await supabase.storage.from(BUCKET).remove([ruta]);
+    throw subida.error ?? insercion.error;
   }
 
-  // No se espera la respuesta: la extraccion tarda entre 15 y 40
-  // segundos y bloquear la interfaz todo ese rato no aporta nada. El
-  // estado se sigue por Realtime.
-  supabase.functions.invoke('extraer-ficha', { body: { extraccion_id: fila.id } })
-    .catch((e) => console.error('No se pudo disparar la extraccion:', e));
+  dispararExtraccion(insercion.data.id);
 
-  return fila;
+  return insercion.data;
+}
+
+/**
+ * Vuelve a intentar una lectura que fallo, con la foto que ya esta
+ * subida. Reintentar no vuelve a cobrar la subida ni obliga a sacar la
+ * foto de nuevo, que es lo unico que le importa a quien esta parado
+ * frente al motor.
+ */
+export async function reintentarExtraccion(id) {
+  // Si quedo trabada en 'procesando', la funcion la rechazaria con 409
+  // por creerla en curso. Esto la libera antes de volver a pedirla.
+  //
+  // Que el rescate falle no corta el reintento: quiza no habia nada que
+  // rescatar. El que decide si se puede o no es el backend.
+  const { error: errorRescate } = await supabase.rpc('reclamar_extracciones_trabadas', {
+    p_extraccion_id: id,
+    p_minutos: 2,
+  });
+  if (errorRescate) console.warn('No se pudo destrabar la lectura:', errorRescate);
+
+  // La fila vuelve a 'pendiente' ANTES de disparar, y se espera. Si no,
+  // el seguimiento arranca mientras todavia dice 'error' --el invoke es
+  // asincronico-- lee ese estado final viejo y devuelve al instante el
+  // mismo error que se estaba reintentando.
+  const { error } = await supabase
+    .from('ficha_extraccion')
+    .update({ estado: 'pendiente', error: null })
+    .eq('id', id)
+    .in('estado', ['pendiente', 'error']);
+  if (error) throw error;
+
+  dispararExtraccion(id);
 }
 
 export async function obtenerExtraccion(id) {
@@ -52,7 +123,19 @@ export async function obtenerExtraccion(id) {
 /** Estados en los que la lectura ya termino y hay algo que hacer. */
 const ESTADOS_FINALES = new Set(['revision', 'error', 'confirmada']);
 
-const SONDEO_MS = 3000;
+const SONDEO_MS = 2500;
+
+/**
+ * A partir de aca la lectura no esta lenta: esta trabada.
+ *
+ * El backend se corta solo a los 120s y siempre deja la fila en un
+ * estado final. Si pasado el doble sigue sin estado final, es que la
+ * corrida murio sin poder escribir --el worker se paso del limite de
+ * reloj de las Edge Functions y lo mataron, y ahi no corre ningun
+ * `catch`--. Nadie va a marcar esa fila desde adentro, asi que la
+ * desatasca el que esta esperando.
+ */
+const MS_TRABADA = 240_000;
 
 /**
  * Espera a que termine la lectura de una ficha.
@@ -65,15 +148,20 @@ const SONDEO_MS = 3000;
  * Lo primero se arreglo una vez; lo segundo va a seguir pasando.
  *
  * Asi que hay dos caminos hacia el mismo resultado: Realtime avisa al
- * instante cuando funciona, y un sondeo cada 3 segundos garantiza que la
- * pantalla avance igual cuando no. El que llega primero corta al otro.
+ * instante cuando funciona, y el sondeo garantiza que la pantalla avance
+ * igual cuando no. El que llega primero corta al otro.
  *
  * `alCambiar` se llama una sola vez, con la fila ya en estado final.
+ * `alProgreso` (opcional) recibe cada estado intermedio que se ve, para
+ * poder distinguir "el servidor todavia no la agarro" de "la esta
+ * leyendo": las dos cosas se veian igual y las dos parecian colgadas.
  */
-export function seguirExtraccion(id, alCambiar) {
+export function seguirExtraccion(id, alCambiar, { alProgreso } = {}) {
   let vivo = true;
   let temporizador = null;
   let canal = null;
+  let rescatada = false;
+  const desde = Date.now();
 
   const soltar = () => {
     vivo = false;
@@ -82,7 +170,11 @@ export function seguirExtraccion(id, alCambiar) {
   };
 
   const resolver = (fila) => {
-    if (!vivo || !fila || !ESTADOS_FINALES.has(fila.estado)) return;
+    if (!vivo || !fila) return;
+    if (!ESTADOS_FINALES.has(fila.estado)) {
+      alProgreso?.(fila.estado);
+      return;
+    }
     soltar();
     alCambiar(fila);
   };
@@ -100,6 +192,17 @@ export function seguirExtraccion(id, alCambiar) {
   const sondear = async () => {
     if (!vivo) return;
     try {
+      // Pasado el plazo, antes de mirar la fila se la desatasca. Si la
+      // corrida murio sin marcarla, la RPC la pasa a 'error' y el mismo
+      // sondeo la lee ya en estado final: la pantalla avanza en el
+      // proximo ciclo en vez de girar indefinidamente.
+      if (!rescatada && Date.now() - desde > MS_TRABADA) {
+        rescatada = true;
+        await supabase.rpc('reclamar_extracciones_trabadas', {
+          p_extraccion_id: id,
+          p_minutos: 2,
+        });
+      }
       resolver(await obtenerExtraccion(id));
     } catch {
       // Un sondeo que falla no es un error del flujo: puede ser el

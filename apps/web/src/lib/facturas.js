@@ -62,12 +62,70 @@ export async function crearDesdeRemito(remitoId) {
   return obtenerFactura(data);
 }
 
+/**
+ * Carga un unico renglon "Servicio" por el importe de la cobranza de la
+ * orden, para poder facturar un trabajo que se hizo sin presupuesto.
+ *
+ * La pantalla lo pide confirmar antes: es plata que baja sola desde otra
+ * tabla a un comprobante fiscal, y eso tiene que decidirlo alguien
+ * mirando el numero.
+ */
+export async function completarConServicio(facturaId) {
+  const { data, error } = await supabase.rpc('completar_factura_con_servicio', {
+    p_factura_id: facturaId,
+  });
+  if (error) throw error;
+  return Number(data);
+}
+
+/**
+ * Pistas para los codigos de ARCA que se ven seguido y que no se
+ * entienden solos.
+ *
+ * "Error interno de base de datos" leido tal cual manda a revisar el
+ * comprobante, que es justo lo unico que no hay que tocar: el problema
+ * esta del otro lado y la unica accion es esperar.
+ */
+const PISTA_ARCA = {
+  501: 'Es un problema interno de ARCA, no del comprobante: reintentá en un rato.',
+  10015: 'El documento del cliente no figura en el padron de ARCA. '
+    + 'En homologacion es normal: el padron de pruebas tiene muy poco cargado.',
+  10016: 'El numero de comprobante no es el que sigue. Probá "Verificar en ARCA" antes de reintentar.',
+};
+
+/**
+ * El rechazo de ARCA en una linea legible.
+ *
+ * Viene como { Err: [{ Code, Msg }] } --u Obs, que son avisos que no
+ * frenan la autorizacion--. Volcar el JSON crudo en pantalla obliga a
+ * leer llaves y comillas para encontrar una frase en castellano que ya
+ * venia escrita adentro.
+ */
+export function mensajeArca(errores) {
+  if (!errores) return '';
+  const lista = errores.Err ?? errores.Obs ?? (Array.isArray(errores) ? errores : null);
+  if (!lista?.length) {
+    return typeof errores === 'string' ? errores : JSON.stringify(errores);
+  }
+  return lista
+    .map((e) => {
+      const pista = PISTA_ARCA[e.Code];
+      return `${e.Code}: ${e.Msg}${pista ? ` — ${pista}` : ''}`;
+    })
+    .join(' · ');
+}
+
 async function invocar(nombre, cuerpo) {
   const { data, error } = await supabase.functions.invoke(nombre, { body: cuerpo });
   if (error) {
-    let detalle = null;
-    try { detalle = (await error.context?.json?.())?.error; } catch { /* sin cuerpo */ }
-    throw new Error(detalle ?? error.message ?? 'Ocurrio un error.');
+    let respuesta = null;
+    try { respuesta = await error.context?.json?.(); } catch { /* sin cuerpo */ }
+    // El "detalle" es lo que dijo ARCA. Sin el, el aviso de arriba de la
+    // pantalla dice "rechazo el comprobante" y el motivo queda a tres
+    // pantallazos de scroll, en la tarjeta de la factura.
+    const detalle = mensajeArca(respuesta?.detalle);
+    const base = respuesta?.error ?? error.message ?? 'Ocurrio un error.';
+    throw new Error(detalle ? `${base} ${detalle}` : base);
   }
   return data;
 }

@@ -1,6 +1,13 @@
 import React from 'react';
 
-const Modal = ({ isOpen, title, message, onClose, onConfirm, type = 'info', isLoading }) => {
+const Modal = ({
+  isOpen, title, message, onClose, onConfirm, type = 'info', isLoading,
+  // "Confirmar" no dice nada cuando la pregunta no es obvia. Con un
+  // texto propio ("Entregar sin cobrar") el boton se entiende sin
+  // releer el mensaje de arriba.
+  confirmLabel = 'Confirmar',
+  cancelLabel = 'Cancelar',
+}) => {
   if (!isOpen) return null;
 
   const isDanger = type === 'danger';
@@ -46,7 +53,7 @@ const Modal = ({ isOpen, title, message, onClose, onConfirm, type = 'info', isLo
               opacity: isLoading ? 0.5 : 1
             }}
           >
-            Cancelar
+            {cancelLabel}
           </button>
           
           <button 
@@ -67,7 +74,7 @@ const Modal = ({ isOpen, title, message, onClose, onConfirm, type = 'info', isLo
             }}
           >
             {isLoading && <span className="loader-spinner">⏳</span>}
-            {isLoading ? 'Procesando...' : 'Confirmar'}
+            {isLoading ? 'Procesando...' : confirmLabel}
           </button>
         </div>
       </div>

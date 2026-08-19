@@ -2850,3 +2850,483 @@ body.dark-mode .barra-guardar {
     animation: none;
   }
 }
+
+
+/* =========================================================
+   Cobranza de una orden
+
+   La plata es la unica parte de la pantalla que tiene un
+   estado "malo": un motor que ya se fue del taller sin
+   pagarse. Todo lo de abajo esta ordenado alrededor de eso,
+   asi que el rojo aparece una sola vez y significa siempre lo
+   mismo. Si se pintara de rojo tambien lo que todavia no se
+   cobro pero sigue en el banco --que es la mitad de la
+   lista-- el rojo dejaria de querer decir algo.
+   ========================================================= */
+
+/* --------- Punto de color en las etiquetas --------- */
+/* La etiqueta ya venia con el color del estado en el texto. El
+   punto le agrega una segunda pista que no depende de
+   distinguir un verde de un ambar en una pantalla al sol. */
+.etiqueta__punto {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Entregado y sin cobrar. Rellena y no delineada: en una lista
+   de veinte tarjetas un borde de color no se ve; un bloque
+   solido si. */
+.etiqueta--alerta {
+  border-color: var(--danger);
+  background: var(--danger);
+  /* La superficie de la app, no blanco fijo: en modo oscuro el
+     rojo aclara y el blanco encima queda ilegible. */
+  color: var(--surface);
+}
+
+/* Barra roja al costado de la fila. Va como sombra interior y no
+   como border-left para no correr 3px todo el contenido de la
+   tarjeta respecto de las demas. */
+.fila--alerta {
+  box-shadow: inset 3px 0 0 var(--danger), var(--shadow-soft);
+}
+
+.fila--alerta:hover {
+  box-shadow: inset 3px 0 0 var(--danger), var(--shadow-medio);
+}
+
+/* --------- Chip con contador (deudores) --------- */
+
+.chip--alerta {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.chip--alerta.activo {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--surface);
+}
+
+.chip__punto {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--surface);
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.chip--alerta.activo .chip__punto {
+  background: var(--surface);
+  color: var(--danger);
+}
+
+/* --------- Avance de la orden --------- */
+/*
+   Una etiqueta sola dice donde esta la orden pero no cuanto le
+   falta. Cuatro casilleros dibujados dicen las dos cosas sin
+   conocer el circuito de antemano, que es lo que necesita el
+   que abre una orden por primera vez.
+*/
+.progreso {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 2px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.progreso__paso {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  text-align: center;
+}
+
+/* El tramo de linea que une con el casillero anterior. Nace en el
+   centro de este punto y va hacia atras: asi los extremos de la
+   fila no cuelgan medio segmento fuera de la tarjeta. */
+.progreso__paso::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border-fuerte);
+}
+
+.progreso__paso:first-child::before {
+  display: none;
+}
+
+.progreso__paso.hecho::before,
+.progreso__paso.actual::before {
+  background: var(--accent);
+}
+
+.progreso__punto {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-fuerte);
+  border-radius: 50%;
+  background: var(--surface);
+  color: #fff;
+}
+
+.progreso__paso.hecho .progreso__punto {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.progreso__paso.actual .progreso__punto {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint-strong);
+}
+
+.progreso__paso.frenada .progreso__punto {
+  border-color: var(--warning);
+  box-shadow: none;
+}
+
+.progreso__label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-light);
+  overflow-wrap: anywhere;
+}
+
+.progreso__paso.actual .progreso__label {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.progreso__paso.frenada .progreso__label {
+  color: var(--warning);
+}
+
+/* --------- Bloque de cobranza --------- */
+
+.cobranza__cifra {
+  margin-top: 2px;
+}
+
+.cobranza__monto {
+  margin-top: 2px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.cobranza__barra {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  overflow: hidden;
+}
+
+.cobranza__barra > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.cobranza__pie {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text-light);
+}
+
+.cobranza__vacia {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-light);
+}
+
+.cobranza__importe {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.cobranza__enlaces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 12px;
+}
+
+/* Registrar un pago es la accion principal de su seccion, pero no
+   de la pantalla: el boton grande y lleno es el que avanza la
+   orden. Este comparte tamaño --se toca igual de facil-- y cede
+   el peso visual. */
+.paso--cobrar {
+  margin-top: 14px;
+  min-height: 48px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-tint);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+/* --------- Lista de pagos --------- */
+
+.pagos {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+}
+
+.pago {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.pago__icono {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text-light);
+}
+
+.pago__cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.pago__titulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pago__sub {
+  font-size: 0.79rem;
+  color: var(--text-light);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pago__montos {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+/* Con tarjeta hay dos numeros y no son intercambiables: arriba lo
+   que entrego el cliente, abajo lo que se le descuenta a la deuda.
+   Verlos juntos es lo que evita la discusion de fin de mes. */
+.pago__imputa {
+  font-size: 0.73rem;
+  color: var(--text-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.pago__quitar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.pago__quitar:hover {
+  background: var(--surface-soft);
+  color: var(--danger);
+}
+
+/* --------- Campos de formulario --------- */
+
+.campo-grupo {
+  margin-top: 14px;
+}
+
+.campo-par {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.campo-ayuda {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-light);
+}
+
+/* Importe: es el dato que se tipea mirando al cliente, y el unico
+   de la hoja que hay que poder leer de reojo para confirmar que no
+   sobro un cero. */
+.campo-monto {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.campo-monto:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-tint-strong);
+}
+
+.campo-monto__signo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.campo-monto__input {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+
+.campo-monto__input:focus {
+  outline: none;
+  border: none;
+  box-shadow: none;
+}
+
+/* --------- Medio de pago --------- */
+/*
+   Tres botones grandes y no un desplegable: la eleccion se hace con
+   el cliente enfrente y la maquina en la mano. Un select ahi son
+   tres toques y una lista que tapa el resto del formulario.
+*/
+.medios {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.medio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 74px;
+  padding: 10px 5px;
+  border: 1px solid var(--border-fuerte);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-light);
+  font: inherit;
+  font-size: 0.79rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+
+.medio--puesto {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.recargo__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.recargo__campo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.recargo__campo .ui-input {
+  width: 84px;
+  text-align: right;
+  font-weight: 700;
+}
+
+/* --------- Enlace de texto dentro de una seccion --------- */
+
+.enlace-suave {
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.enlace-suave:hover {
+  text-decoration: underline;
+}
+
+/* --------- Formulario dentro de una hoja inferior --------- */
+/* El cuerpo de la hoja trae poco padding lateral porque nacio para
+   una lista de items que se tocan; un formulario necesita un poco
+   mas de aire y que el primer campo no arranque pegado al titulo. */
+.hoja__form {
+  padding: 2px 6px 16px;
+}
+
+.hoja__form > .campo-grupo:first-child {
+  margin-top: 0;
+}

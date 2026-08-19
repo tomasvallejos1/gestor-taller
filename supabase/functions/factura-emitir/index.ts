@@ -27,6 +27,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import {
   leerContextoArca, fecompUltimoAutorizado, fecompConsultar, fecaeSolicitar, fechaArca,
 } from '../_shared/deno/arca.ts';
+import { hoyArgentina } from '../_shared/wsfe-xml.js';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -135,11 +136,24 @@ Deno.serve(async (req) => {
   try {
     const ultimoArca = await fecompUltimoAutorizado(admin, ctx, f.punto_venta, f.cbte_tipo);
     const numero = Math.max(ultimoArca, Number(ultimoLocal) || 0) + 1;
-    const cbteFecha = f.cbte_fecha ?? new Date().toISOString().slice(0, 10);
+    const cbteFecha = f.cbte_fecha ?? hoyArgentina();
+
+    // El vencimiento de pago no puede ser anterior a la fecha del
+    // comprobante (ARCA 10036). Las tres fechas de servicio nacen con la
+    // fecha del REMITO, y entre entregar y facturar pasa un dia como
+    // minimo: sin esto, toda factura emitida despues del dia de la
+    // entrega rebota. Se corrige al vencimiento mas temprano que ARCA
+    // acepta, que es el mismo dia --pago contado, que es como cobra el
+    // taller-- y se persiste para que lo declarado y lo guardado digan
+    // lo mismo.
+    const vtoPago = f.vto_pago && f.vto_pago >= cbteFecha ? f.vto_pago : cbteFecha;
 
     await admin.rpc('anotar_intento_factura', {
       p_factura_id: f.id, p_numero: numero, p_cbte_fecha: cbteFecha,
     });
+    if (vtoPago !== f.vto_pago) {
+      await admin.from('factura').update({ vto_pago: vtoPago }).eq('id', f.id);
+    }
 
     const condicionIva = CONDICION_IVA_RECEPTOR[f.cliente_condicion_fiscal as string] ?? 5;
 
@@ -152,7 +166,7 @@ Deno.serve(async (req) => {
       cbteFch: fechaArca(cbteFecha),
       servDesde: f.concepto !== 1 ? fechaArca(f.serv_desde) : null,
       servHasta: f.concepto !== 1 ? fechaArca(f.serv_hasta) : null,
-      vtoPago: f.concepto !== 1 ? fechaArca(f.vto_pago) : null,
+      vtoPago: f.concepto !== 1 ? fechaArca(vtoPago) : null,
       impTotal: Number(f.total),
       impNeto: Number(f.imp_neto),
       impIva: Number(f.imp_iva),
@@ -173,7 +187,8 @@ Deno.serve(async (req) => {
 
     await admin.rpc('rechazar_factura', {
       p_factura_id: f.id,
-      p_errores: resultado.errores ?? resultado.observaciones ?? { motivo: 'ARCA rechazo sin detalle' },
+      p_errores: resultado.errores ?? resultado.observaciones
+        ?? { motivo: 'ARCA no devolvio ni CAE ni error', respuesta: resultado.crudo },
     });
     return responder({
       error: 'ARCA rechazo el comprobante.',

@@ -65,7 +65,7 @@ const PresupuestoForm = () => {
     try {
       const [cs, rs, cat, cfg] = await Promise.all([
         listarClientes({ porPagina: 300 }),
-        listarReparaciones({ soloAbiertas: false }),
+        listarReparaciones({ vista: 'todas' }),
         listarCatalogo(),
         obtenerConfiguracion(),
       ]);
