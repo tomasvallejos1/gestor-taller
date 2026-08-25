@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, Pencil, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import { useEsMobile } from '../lib/useMediaQuery';
 import {
@@ -49,8 +49,8 @@ const Catalogo = () => {
     }
   };
 
-  const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: '0.98rem', fontFamily: 'inherit' };
-  const labelStyle = { display: 'block', fontSize: '0.72rem', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
+  const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: 'var(--txt-base)', fontFamily: 'inherit' };
+  const labelStyle = { display: 'block', fontSize: 'var(--txt-xs)', fontWeight: 700, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
 
   return (
     <div>
@@ -58,10 +58,10 @@ const Catalogo = () => {
         <Link to="/sistema/presupuestos" className="btn btn-secondary" style={{ textDecoration: 'none', fontWeight: 600 }}>
           <ArrowLeft size={15} /> Volver
         </Link>
-        <h2 style={{ margin: 0, fontSize: '1.45rem' }}>Lista de precios</h2>
+        <h2 style={{ margin: 0, fontSize: 'var(--txt-xl)' }}>Lista de precios</h2>
       </div>
 
-      <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginTop: 0, marginBottom: '18px' }}>
+      <p style={{ color: 'var(--text-light)', fontSize: 'var(--txt-sm)', marginTop: 0, marginBottom: '18px' }}>
         Lo que cargues aca aparece como sugerencia al armar un presupuesto. El precio se
         copia al renglon: cambiar un precio de esta lista no altera presupuestos ya hechos.
       </p>
@@ -71,7 +71,7 @@ const Catalogo = () => {
       {editando ? (
         <form onSubmit={guardar} className="ui-card" style={{ padding: '20px', marginBottom: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--txt-md)' }}>
               {editando.id ? 'Editar item' : 'Nuevo item'}
             </h3>
             <button type="button" onClick={() => setEditando(null)} aria-label="Cerrar"
@@ -108,7 +108,7 @@ const Catalogo = () => {
             <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', minHeight: '44px' }}>
               <input type="checkbox" checked={editando.activo !== false} style={{ width: 18, height: 18 }}
                 onChange={(e) => setEditando({ ...editando, activo: e.target.checked })} />
-              <span style={{ fontSize: '0.9rem' }}>Disponible para usar</span>
+              <span style={{ fontSize: 'var(--txt-sm)' }}>Disponible para usar</span>
             </label>
             <Button type="submit" variant="primary" isLoading={guardando}>Guardar</Button>
           </div>
@@ -120,7 +120,7 @@ const Catalogo = () => {
       )}
 
       {cargando ? (
-        <div className="ui-card" style={{ padding: '40px' }}><Spinner label="Cargando..." centered /></div>
+        <Esqueleto tipo="lista" />
       ) : items.length === 0 ? (
         <div className="ui-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-light)' }}>
           La lista esta vacia. Cargá los trabajos que hacés seguido y sus precios.
@@ -138,12 +138,12 @@ const Catalogo = () => {
                   {it.codigo && <span style={{ color: 'var(--text-light)', fontWeight: 400 }}>{it.codigo} · </span>}
                   {it.descripcion}
                 </div>
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                <div style={{ fontSize: 'var(--txt-xs)', color: 'var(--text-light)' }}>
                   por {it.unidad}{!it.activo ? ' · no disponible' : ''}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <strong style={{ fontSize: '1.05rem', whiteSpace: 'nowrap' }}>{pesos(it.precio)}</strong>
+                <strong style={{ fontSize: 'var(--txt-md)', whiteSpace: 'nowrap' }}>{pesos(it.precio)}</strong>
                 <button type="button" onClick={() => setEditando({ ...VACIO, ...it })}
                   aria-label={`Editar ${it.descripcion}`}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', color: 'inherit', padding: '10px', minHeight: '44px', minWidth: '44px' }}>

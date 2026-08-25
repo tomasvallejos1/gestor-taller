@@ -45,7 +45,7 @@ const ActualizacionPwa = () => {
         maxWidth: 'calc(100vw - 24px)',
       }}
     >
-      <span style={{ fontSize: '0.88rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: 'var(--txt-sm)', fontWeight: 600, whiteSpace: 'nowrap' }}>
         Hay una versión nueva
       </span>
       <Button

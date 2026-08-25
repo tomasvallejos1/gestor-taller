@@ -12,11 +12,11 @@ const ComingSoon = ({ title }) => {
       textAlign: 'center',
       color: '#334155'
     }}>
-      <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🚧</div>
-      <h2 style={{ fontSize: '2rem', color: '#0f172a', marginBottom: '10px' }}>
+      <div style={{ fontSize: 'var(--txt-2xl)', marginBottom: '20px' }}>🚧</div>
+      <h2 style={{ fontSize: 'var(--txt-2xl)', color: '#0f172a', marginBottom: '10px' }}>
         {title}
       </h2>
-      <p style={{ fontSize: '1.1rem', color: '#64748b', maxWidth: '500px' }}>
+      <p style={{ fontSize: 'var(--txt-md)', color: '#64748b', maxWidth: '500px' }}>
         Estamos trabajando duro para traerte esta funcionalidad en la próxima actualización del sistema.
       </p>
       <Link to="/sistema/home" className="btn btn-primary" style={{ marginTop: '30px', textDecoration:'none' }}>

@@ -67,7 +67,7 @@ const Sidebar = ({ isOpen, closeMenu }) => {
     color: isActive ? '#ffffff' : '#a8b2c1',
     background: isActive ? 'rgba(255, 255, 255, 0.10)' : 'transparent',
     border: isActive ? '1px solid rgba(255, 255, 255, 0.14)' : '1px solid transparent',
-    fontSize: '0.92rem',
+    fontSize: 'var(--txt-base)',
     fontWeight: 600,
     marginBottom: '8px'
   });
@@ -108,7 +108,7 @@ const Sidebar = ({ isOpen, closeMenu }) => {
                 <Wrench size={18} />
               </div>
               <div>
-                <strong style={{ display: 'block', fontSize: '0.95rem', letterSpacing: '0.04em' }}>BOBINADOS DAVID</strong>
+                <strong style={{ display: 'block', fontSize: 'var(--txt-base)', letterSpacing: '0.04em' }}>BOBINADOS DAVID</strong>
                 <small style={{ color: '#aeb5e8' }}>Panel operativo</small>
               </div>
             </div>

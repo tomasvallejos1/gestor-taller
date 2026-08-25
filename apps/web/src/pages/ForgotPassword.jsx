@@ -84,7 +84,7 @@ const ForgotPassword = () => {
             {enviado ? <MailCheck size={28} /> : <KeyRound size={28} />}
           </div>
 
-          <h2 style={{ fontSize: '1.85rem', marginBottom: '8px' }}>
+          <h2 style={{ fontSize: 'var(--txt-2xl)', marginBottom: '8px' }}>
             {enviado ? 'Revisa tu correo' : 'Recuperar acceso'}
           </h2>
 

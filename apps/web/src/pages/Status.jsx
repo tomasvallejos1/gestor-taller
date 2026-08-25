@@ -99,8 +99,8 @@ const Status = () => {
       {sinResultado && (
         <div className="estado-tarjeta" style={{ textAlign: 'center' }}>
           <CircleAlert size={26} style={{ opacity: 0.5, marginBottom: '10px' }} />
-          <h3 style={{ margin: '0 0 6px', fontSize: '1.1rem' }}>No encontramos esa orden</h3>
-          <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.92rem' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: 'var(--txt-md)' }}>No encontramos esa orden</h3>
+          <p style={{ color: 'var(--text-light)', margin: 0, fontSize: 'var(--txt-base)' }}>
             Revisa el numero y el apellido de tu comprobante. Si el problema sigue,
             llamanos al <a href="tel:+543462553285">(3462) 55-3285</a>.
           </p>

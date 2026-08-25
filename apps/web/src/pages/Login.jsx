@@ -75,7 +75,7 @@ const Login = () => {
             <ShieldCheck size={30} />
           </div>
 
-          <h2 style={{ fontSize: '2rem', marginBottom: '8px' }}>Acceso al Sistema</h2>
+          <h2 style={{ fontSize: 'var(--txt-2xl)', marginBottom: '8px' }}>Acceso al Sistema</h2>
           <p style={{ color: 'var(--text-light)', margin: 0 }}>
             Gestion interna de Bobinados David
           </p>
@@ -97,7 +97,7 @@ const Login = () => {
               {/* label con htmlFor y no un span suelto: asi tocar la
                   palabra enfoca el campo, como en el de arriba. */}
               <label className="ui-field__label" htmlFor="login-clave">Contraseña</label>
-              <Link to="/forgot-password" style={{ fontSize: '0.84rem', color: 'var(--accent)', fontWeight: 600 }}>
+              <Link to="/forgot-password" style={{ fontSize: 'var(--txt-sm)', color: 'var(--accent)', fontWeight: 600 }}>
                 Recuperar acceso
               </Link>
             </div>

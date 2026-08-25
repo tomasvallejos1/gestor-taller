@@ -54,6 +54,25 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        /*
+         * Las bibliotecas van en su propio archivo.
+         *
+         * React, el router y el cliente de Supabase no cambian cuando
+         * cambia el taller: separandolos, un deploy que toca una
+         * pantalla invalida solo esa pantalla y no obliga a bajar de
+         * nuevo 200 KB que el celular ya tenia en cache.
+         */
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-dom/client', 'react-router-dom'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+  },
+
   resolve: {
     alias: {
       // La logica de parseo (coma decimal, "150.150" = dos valores, hilos

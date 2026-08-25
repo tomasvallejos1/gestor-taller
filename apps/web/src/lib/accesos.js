@@ -102,8 +102,29 @@ export const DESTINOS = [
 
 export const GRUPOS = ['Taller', 'Facturacion', 'Sistema'];
 
-/** Lo que ve alguien que recien entra, antes de configurar nada. */
-export const POR_DEFECTO = ['reparaciones', 'nueva-ficha', 'presupuestos', 'clientes'];
+/**
+ * Los destinos que en el celular ya estan en la barra de abajo.
+ *
+ * Un atajo a algo que esta a un toque de distancia no ahorra nada, y
+ * ocupa el lugar mas caro de la app: la primera pantalla del panel.
+ */
+export const EN_BARRA_MOBILE = ['reparaciones', 'motores', 'clientes'];
+
+/**
+ * Lo que ve alguien que recien entra, antes de configurar nada.
+ *
+ * Antes eran los mismos cuatro para todos, y en el celular dos de ellos
+ * --reparaciones y clientes-- repetian botones que ya estaban en la
+ * barra de abajo. Se gastaban dos de los cuatro atajos en algo que ya
+ * estaba a un toque.
+ *
+ * Ahora dependen del rol, porque el rol cambia por completo cual es el
+ * trabajo del dia. Un editor carga fichas y cotiza; a un lector esas
+ * secciones ni siquiera le aparecen --`puedeVer` las filtra-- y unos
+ * defaults pensados solo para el editor le dejaban el panel vacio.
+ */
+export const POR_DEFECTO_EDITOR = ['nueva-ficha', 'presupuestos', 'catalogo', 'facturas'];
+export const POR_DEFECTO_LECTOR = ['motores', 'reparaciones', 'clientes', 'informes'];
 
 /** Mas de esto y deja de ser un atajo: es otra pantalla de menu. */
 export const MAXIMO = 8;
@@ -122,22 +143,23 @@ export const puedeVer = (destino, esEditor) => (
  * compu del escritorio se usan para cosas distintas y no tiene sentido
  * que compartan los mismos cuatro atajos.
  */
-export function leerAccesos() {
+export function leerAccesos(esEditor = false) {
+  const porDefecto = esEditor ? POR_DEFECTO_EDITOR : POR_DEFECTO_LECTOR;
   try {
     const crudo = localStorage.getItem(CLAVE);
-    if (!crudo) return POR_DEFECTO;
+    if (!crudo) return porDefecto;
 
     const ids = JSON.parse(crudo);
-    if (!Array.isArray(ids)) return POR_DEFECTO;
+    if (!Array.isArray(ids)) return porDefecto;
 
     // Se filtra contra el catalogo: un id guardado hace meses puede
     // apuntar a una seccion que ya no existe, y no se puede confiar en
     // que lo que hay en localStorage siga siendo valido.
     const validos = ids.filter((id) => destinoDe(id)).slice(0, MAXIMO);
-    return validos.length ? validos : POR_DEFECTO;
+    return validos.length ? validos : porDefecto;
   } catch {
     // localStorage puede tirar en modo privado o con el JSON corrupto.
-    return POR_DEFECTO;
+    return porDefecto;
   }
 }
 

@@ -15,6 +15,7 @@ import {
 import { obtenerConfiguracion, guardarConfiguracion } from '../lib/presupuestos';
 import { generarCodigoTelegram, obtenerEstadoTelegram, desvincularTelegram } from '../lib/telegram';
 import { CONDICIONES_FISCALES, revisarDocumento } from '@shared/fiscal.js';
+import { copiarTexto } from '../lib/navegador';
 
 const DURACION_CODIGO_MS = 10 * 60 * 1000;
 
@@ -219,9 +220,12 @@ const Ajustes = () => {
   };
 
   const copiarCodigo = async () => {
-    await navigator.clipboard.writeText(`/vincular ${codigoTelegram.codigo}`);
-    setCopiadoCodigo(true);
-    setTimeout(() => setCopiadoCodigo(false), 2000);
+    if (await copiarTexto(`/vincular ${codigoTelegram.codigo}`)) {
+      setCopiadoCodigo(true);
+      setTimeout(() => setCopiadoCodigo(false), 2000);
+    } else {
+      setErrorTelegram('No se pudo copiar. Escribí el comando a mano en el chat del bot.');
+    }
   };
 
   const verificarVinculo = async () => {
@@ -281,24 +285,29 @@ const Ajustes = () => {
   };
 
   const copiarClave = async () => {
-    await navigator.clipboard.writeText(reciencreado.claveTemporal);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
+    // La clave temporal ya esta a la vista en la pantalla, asi que si no
+    // se puede copiar alcanza con avisar: se lee y se pasa a mano.
+    if (await copiarTexto(reciencreado.claveTemporal)) {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } else {
+      setErrorUsuarios('No se pudo copiar. Anotá la clave que figura arriba antes de cerrar.');
+    }
   };
 
-  const labelStyle = { display: 'block', fontSize: '0.72rem', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
-  const inputStyle = { width: '100%', padding: '11px 13px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: '1rem', fontFamily: 'inherit' };
+  const labelStyle = { display: 'block', fontSize: 'var(--txt-xs)', fontWeight: '700', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
+  const inputStyle = { width: '100%', padding: '11px 13px', borderRadius: '9px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'inherit', boxSizing: 'border-box', fontSize: 'var(--txt-base)', fontFamily: 'inherit' };
   const tabStyle = (activa) => ({
     padding: '11px 18px', cursor: 'pointer', background: 'transparent',
     border: 'none', borderBottom: `3px solid ${activa ? 'var(--accent)' : 'transparent'}`,
     color: activa ? 'var(--accent)' : 'var(--text-light)',
-    fontWeight: activa ? 700 : 500, fontSize: '0.95rem',
+    fontWeight: activa ? 700 : 500, fontSize: 'var(--txt-base)',
     display: 'inline-flex', alignItems: 'center', gap: '7px', minHeight: '44px',
   });
 
   return (
     <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '1.8rem', marginBottom: '18px' }}>Configuracion</h2>
+      <h2 style={{ fontSize: 'var(--txt-2xl)', marginBottom: '18px' }}>Configuracion</h2>
 
       <div style={{ display: 'flex', gap: '6px', marginBottom: '22px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <button type="button" style={tabStyle(pestana === 'perfil')} onClick={() => setPestana('perfil')}>
@@ -384,7 +393,7 @@ const Ajustes = () => {
               </div>
             ) : codigoTelegram && codigoVencido ? (
               <div>
-                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: 'var(--txt-sm)' }}>
                   Ese código ya venció.
                 </p>
                 <Button type="button" variant="primary" isLoading={generandoCodigo} onClick={generarCodigo}>
@@ -393,22 +402,22 @@ const Ajustes = () => {
               </div>
             ) : codigoTelegram ? (
               <div>
-                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: 'var(--txt-sm)' }}>
                   Escribile esto al bot, desde Telegram:
                 </p>
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
                   padding: '14px 16px', borderRadius: '10px', background: 'var(--surface-soft, rgba(0,0,0,0.04))',
                 }}>
-                  <code style={{ fontSize: '1.2rem', fontWeight: 700, letterSpacing: '0.06em' }}>
+                  <code style={{ fontSize: 'var(--txt-lg)', fontWeight: 700, letterSpacing: '0.06em' }}>
                     /vincular {codigoTelegram.codigo}
                   </code>
-                  <button type="button" onClick={copiarCodigo} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                  <button type="button" onClick={copiarCodigo} className="btn btn-secondary" style={{ fontSize: 'var(--txt-sm)' }}>
                     {copiadoCodigo ? <Check size={14} /> : <Copy size={14} />}
                     {copiadoCodigo ? 'Copiado' : 'Copiar'}
                   </button>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-light)', marginTop: '10px' }}>
+                <p style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', marginTop: '10px' }}>
                   Vale por {Math.floor(segundosRestantes / 60)}:{String(segundosRestantes % 60).padStart(2, '0')} minutos.
                 </p>
                 <div style={{ marginTop: '14px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -422,7 +431,7 @@ const Ajustes = () => {
               </div>
             ) : (
               <div>
-                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+                <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: 'var(--txt-sm)' }}>
                   Vinculá tu cuenta para pedirle fichas al bot desde Telegram: <code>/ficha</code>,{' '}
                   <code>/buscar</code> y mandarle fotos para cargar una nueva.
                 </p>
@@ -442,7 +451,7 @@ const Ajustes = () => {
           </div>
         ) : (
           <form onSubmit={guardarTaller} className="ui-card" style={{ padding: esMobile ? '18px' : '28px' }}>
-            <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: '0.9rem' }}>
+            <p style={{ marginTop: 0, color: 'var(--text-light)', fontSize: 'var(--txt-sm)' }}>
               Esto es lo que sale en la cabecera de cada presupuesto, en el PDF y en el
               link que se le manda al cliente.
             </p>
@@ -496,7 +505,7 @@ const Ajustes = () => {
                 <label style={labelStyle} htmlFor="cf-pv">Punto de venta</label>
                 <input id="cf-pv" style={inputStyle} inputMode="numeric" value={cfg.punto_venta ?? 1}
                   onChange={(e) => setCfg({ ...cfg, punto_venta: e.target.value })} />
-                <small style={{ color: 'var(--text-light)', fontSize: '0.78rem' }}>
+                <small style={{ color: 'var(--text-light)', fontSize: 'var(--txt-xs)' }}>
                   Los presupuestos ya emitidos conservan el punto de venta con el que salieron.
                 </small>
               </div>
@@ -504,7 +513,7 @@ const Ajustes = () => {
                 <label style={labelStyle} htmlFor="cf-iva">IVA por defecto (%)</label>
                 <input id="cf-iva" style={inputStyle} inputMode="decimal" value={cfg.iva_por_defecto ?? 0}
                   onChange={(e) => setCfg({ ...cfg, iva_por_defecto: e.target.value })} />
-                <small style={{ color: 'var(--text-light)', fontSize: '0.78rem' }}>
+                <small style={{ color: 'var(--text-light)', fontSize: 'var(--txt-xs)' }}>
                   Monotributista no discrimina IVA: dejar en 0.
                 </small>
               </div>
@@ -532,7 +541,7 @@ const Ajustes = () => {
       {pestana === 'usuarios' && esSuper && (
         <>
           <form onSubmit={altaUsuario} className="ui-card" style={{ padding: esMobile ? '18px' : '24px', marginBottom: '20px' }}>
-            <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>Nuevo usuario</h3>
+            <h3 style={{ marginTop: 0, fontSize: 'var(--txt-md)' }}>Nuevo usuario</h3>
 
             {errorUsuarios ? <Alert variant="error" className="mb-3">{errorUsuarios}</Alert> : null}
 
@@ -543,15 +552,15 @@ const Ajustes = () => {
                   <strong>{reciencreado.email}</strong>.
                 </div>
                 <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <code style={{ padding: '7px 12px', borderRadius: '7px', background: 'rgba(0,0,0,0.08)', fontSize: '1.05rem', letterSpacing: '0.1em', fontWeight: 700 }}>
+                  <code style={{ padding: '7px 12px', borderRadius: '7px', background: 'rgba(0,0,0,0.08)', fontSize: 'var(--txt-md)', letterSpacing: '0.1em', fontWeight: 700 }}>
                     {reciencreado.claveTemporal}
                   </code>
-                  <button type="button" onClick={copiarClave} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+                  <button type="button" onClick={copiarClave} className="btn btn-secondary" style={{ fontSize: 'var(--txt-sm)' }}>
                     {copiado ? <Check size={14} /> : <Copy size={14} />}
                     {copiado ? 'Copiado' : 'Copiar'}
                   </button>
                 </div>
-                <div style={{ marginTop: '8px', fontSize: '0.85rem' }}>
+                <div style={{ marginTop: '8px', fontSize: 'var(--txt-sm)' }}>
                   Es una clave temporal y no se vuelve a mostrar. Pasasela y pedile que la
                   cambie desde &quot;Recuperar acceso&quot;.
                 </div>
@@ -578,7 +587,7 @@ const Ajustes = () => {
               </div>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-light)', marginTop: '10px' }}>
+            <p style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', marginTop: '10px' }}>
               {ROLES.find((r) => r.valor === nuevo.rol)?.ayuda}
             </p>
 
@@ -588,7 +597,7 @@ const Ajustes = () => {
           </form>
 
           <div className="ui-card" style={{ padding: esMobile ? '16px' : '22px' }}>
-            <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>Usuarios del taller</h3>
+            <h3 style={{ marginTop: 0, fontSize: 'var(--txt-md)' }}>Usuarios del taller</h3>
 
             {cargandoUsuarios ? (
               <Spinner label="Cargando usuarios..." centered />
@@ -609,10 +618,10 @@ const Ajustes = () => {
                           {u.nombre}
                           {soyYo && <span style={{ color: 'var(--text-light)', fontWeight: 400 }}> (vos)</span>}
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-light)', overflowWrap: 'anywhere' }}>
+                        <div style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', overflowWrap: 'anywhere' }}>
                           {u.email}
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-light)', marginTop: '3px' }}>
+                        <div style={{ fontSize: 'var(--txt-xs)', color: 'var(--text-light)', marginTop: '3px' }}>
                           {u.ultimo_acceso
                             ? `Ultimo acceso: ${new Date(u.ultimo_acceso).toLocaleString('es-AR')}`
                             : 'Nunca entro'}

@@ -68,8 +68,8 @@ const RemitoPublico = () => {
 
   const { emisor, cliente, items, trabajo } = datos;
 
-  const celda = { padding: '11px 8px', borderBottom: '1px solid #e2e8f0', fontSize: '0.92rem' };
-  const encabezado = { ...celda, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.07em', color: '#64748b', fontWeight: 700, borderBottom: '1px solid #cbd5e1' };
+  const celda = { padding: '11px 8px', borderBottom: '1px solid #e2e8f0', fontSize: 'var(--txt-base)' };
+  const encabezado = { ...celda, fontSize: 'var(--txt-xs)', textTransform: 'uppercase', letterSpacing: '0.07em', color: '#64748b', fontWeight: 700, borderBottom: '1px solid #cbd5e1' };
 
   return (
     <div style={{ background: '#f1f5f9', minHeight: '100vh', padding: '28px 14px' }}>
@@ -77,8 +77,8 @@ const RemitoPublico = () => {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '18px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '1.5rem', margin: '0 0 6px' }}>{emisor.razon_social}</h1>
-            <div style={{ fontSize: '0.86rem', color: '#64748b', lineHeight: 1.6 }}>
+            <h1 style={{ fontSize: 'var(--txt-xl)', margin: '0 0 6px' }}>{emisor.razon_social}</h1>
+            <div style={{ fontSize: 'var(--txt-sm)', color: '#64748b', lineHeight: 1.6 }}>
               {emisor.domicilio && <div>{emisor.domicilio}</div>}
               {emisor.localidad && <div>{emisor.localidad}</div>}
               {emisor.telefono && <div>Tel. {emisor.telefono}</div>}
@@ -91,17 +91,17 @@ const RemitoPublico = () => {
             <div style={{
               width: '52px', height: '52px', border: '2px solid #0f172a', borderRadius: '4px',
               display: 'grid', placeItems: 'center', margin: '0 auto 6px',
-              fontSize: '1.8rem', fontWeight: 800, lineHeight: 1,
+              fontSize: 'var(--txt-2xl)', fontWeight: 800, lineHeight: 1,
             }}>X</div>
-            <div style={{ fontSize: '0.62rem', color: '#64748b', fontWeight: 700, maxWidth: '110px' }}>
+            <div style={{ fontSize: 'var(--txt-xs)', color: '#64748b', fontWeight: 700, maxWidth: '110px' }}>
               DOCUMENTO NO VALIDO COMO FACTURA
             </div>
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '1.3rem', fontWeight: 800, marginBottom: '4px' }}>REMITO</div>
-            <div style={{ fontSize: '1rem', fontWeight: 700 }}>N° {datos.comprobante}</div>
-            <div style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '6px', lineHeight: 1.6 }}>
+            <div style={{ fontSize: 'var(--txt-lg)', fontWeight: 800, marginBottom: '4px' }}>REMITO</div>
+            <div style={{ fontSize: 'var(--txt-base)', fontWeight: 700 }}>N° {datos.comprobante}</div>
+            <div style={{ fontSize: 'var(--txt-sm)', color: '#64748b', marginTop: '6px', lineHeight: 1.6 }}>
               <div>Fecha: {fecha(datos.fecha)}</div>
               {datos.medio_pago && <div>Pago: {ETIQUETA_MEDIO_PAGO[datos.medio_pago] ?? datos.medio_pago}</div>}
             </div>
@@ -109,18 +109,18 @@ const RemitoPublico = () => {
         </div>
 
         <div style={{ marginTop: '22px', padding: '14px 16px', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>
+          <div style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '6px' }}>
             Entregado a
           </div>
-          <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+          <div style={{ fontWeight: 700, fontSize: 'var(--txt-md)' }}>
             {cliente.nombre ?? 'Consumidor final'}
             {cliente.documento && (
-              <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.9rem', marginLeft: '10px' }}>
+              <span style={{ fontWeight: 400, color: '#64748b', fontSize: 'var(--txt-sm)', marginLeft: '10px' }}>
                 {(cliente.documento_tipo ?? '').toUpperCase()} {formatearDoc(cliente.documento_tipo, cliente.documento)}
               </span>
             )}
           </div>
-          <div style={{ fontSize: '0.86rem', color: '#64748b', marginTop: '3px' }}>
+          <div style={{ fontSize: 'var(--txt-sm)', color: '#64748b', marginTop: '3px' }}>
             {cliente.domicilio && <div>{cliente.domicilio}</div>}
             <div>{CONDICIONES[cliente.condicion_fiscal] ?? 'Consumidor Final'}</div>
           </div>
@@ -130,18 +130,18 @@ const RemitoPublico = () => {
           <div style={{ marginTop: '18px', display: 'grid', gap: '10px' }}>
             {trabajo.problema && (
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>
                   Problema declarado
                 </div>
-                <div style={{ fontSize: '0.9rem' }}>{trabajo.problema}</div>
+                <div style={{ fontSize: 'var(--txt-sm)' }}>{trabajo.problema}</div>
               </div>
             )}
             {trabajo.diagnostico && (
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>
+                <div style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>
                   Diagnostico
                 </div>
-                <div style={{ fontSize: '0.9rem' }}>{trabajo.diagnostico}</div>
+                <div style={{ fontSize: 'var(--txt-sm)' }}>{trabajo.diagnostico}</div>
               </div>
             )}
           </div>
@@ -174,35 +174,35 @@ const RemitoPublico = () => {
         </div>
 
         <div style={{ marginTop: '18px', marginLeft: 'auto', maxWidth: '300px', display: 'grid', gap: '7px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-base)' }}>
             <span style={{ color: '#64748b' }}>Subtotal</span><strong>{pesos(datos.subtotal)}</strong>
           </div>
           {Number(datos.descuento) > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-base)' }}>
               <span style={{ color: '#64748b' }}>Descuento</span><strong>- {pesos(datos.descuento)}</strong>
             </div>
           )}
           {Number(datos.iva_pct) > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.92rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-base)' }}>
               <span style={{ color: '#64748b' }}>IVA {datos.iva_pct}%</span>
               <strong>{pesos((datos.subtotal - datos.descuento) * (datos.iva_pct / 100))}</strong>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: 800, background: '#f1f5f9', padding: '10px 12px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-lg)', fontWeight: 800, background: '#f1f5f9', padding: '10px 12px', borderRadius: '8px' }}>
             <span>TOTAL</span><span>{pesos(datos.total)}</span>
           </div>
         </div>
 
         {datos.notas && (
           <div style={{ marginTop: '24px' }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '5px' }}>
+            <div style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '5px' }}>
               Observaciones
             </div>
-            <div style={{ fontSize: '0.9rem', whiteSpace: 'pre-wrap' }}>{datos.notas}</div>
+            <div style={{ fontSize: 'var(--txt-sm)', whiteSpace: 'pre-wrap' }}>{datos.notas}</div>
           </div>
         )}
 
-        <div style={{ marginTop: '8px', fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center' }}>
+        <div style={{ marginTop: '8px', fontSize: 'var(--txt-xs)', color: '#94a3b8', textAlign: 'center' }}>
           Este documento no reemplaza a la factura. No es valido como comprobante fiscal.
         </div>
       </div>

@@ -57,7 +57,7 @@ const Home = () => {
               background: 'var(--accent-tint-strong)',
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
-              fontSize: '0.8rem',
+              fontSize: 'var(--txt-xs)',
               fontWeight: '700'
             }}
           >
@@ -73,7 +73,7 @@ const Home = () => {
 
           <p
             style={{
-              fontSize: '1.16rem',
+              fontSize: 'var(--txt-lg)',
               color: '#dbe0ff',
               margin: '22px auto 34px',
               lineHeight: '1.65',
@@ -88,7 +88,7 @@ const Home = () => {
             <Link
               to="/estado"
               className="btn btn-primary"
-              style={{ padding: '14px 30px', fontSize: '1rem', minWidth: '220px' }}
+              style={{ padding: '14px 30px', fontSize: 'var(--txt-base)', minWidth: '220px' }}
             >
               Consultar estado de equipo
             </Link>
@@ -97,7 +97,7 @@ const Home = () => {
               className="btn"
               style={{
                 padding: '14px 30px',
-                fontSize: '1rem',
+                fontSize: 'var(--txt-base)',
                 borderRadius: '999px',
                 border: '1px solid rgba(255,255,255,0.4)',
                 background: 'rgba(255,255,255,0.08)',
@@ -114,7 +114,7 @@ const Home = () => {
       <section style={{ padding: '84px 20px 72px', background: 'var(--bg-muted)' }}>
         <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '46px' }}>
-            <h2 style={{ fontSize: '2.2rem', marginBottom: '10px' }}>Servicios que priorizan continuidad operativa</h2>
+            <h2 style={{ fontSize: 'var(--txt-2xl)', marginBottom: '10px' }}>Servicios que priorizan continuidad operativa</h2>
             <p style={{ color: 'var(--text-light)', maxWidth: '670px', margin: '0 auto' }}>
               Organizamos cada orden con trazabilidad real para que sepas que se hizo, cuando y con que resultado.
             </p>
@@ -126,7 +126,7 @@ const Home = () => {
                 <div className="icon-box" aria-hidden="true">
                   {service.icon}
                 </div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>{service.title}</h3>
+                <h3 style={{ fontSize: 'var(--txt-lg)', marginBottom: '8px' }}>{service.title}</h3>
                 <p style={{ margin: 0, color: 'var(--text-light)', lineHeight: '1.6' }}>{service.description}</p>
               </article>
             ))}
@@ -136,22 +136,22 @@ const Home = () => {
 
       <section style={{ padding: '70px 20px', background: '#0b0b12', color: '#fff' }}>
         <div style={{ maxWidth: '980px', margin: '0 auto', textAlign: 'center' }}>
-          <h2 style={{ color: '#fff', marginBottom: '12px', fontSize: '2rem' }}>Resultados que sostienen tu produccion</h2>
+          <h2 style={{ color: '#fff', marginBottom: '12px', fontSize: 'var(--txt-2xl)' }}>Resultados que sostienen tu produccion</h2>
           <p style={{ color: '#c6cbef', marginBottom: '34px' }}>
             Combinamos experiencia tecnica y gestion digital para acelerar decisiones.
           </p>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px' }}>
             <div className="ui-card" style={{ background: 'var(--accent-tint-strong)', borderColor: 'var(--accent-border)' }}>
-              <h3 style={{ color: 'var(--purple-light)', fontSize: '2rem' }}>+20</h3>
+              <h3 style={{ color: 'var(--purple-light)', fontSize: 'var(--txt-2xl)' }}>+20</h3>
               <p style={{ margin: 0, color: '#dbe0ff' }}>anos en el rubro</p>
             </div>
             <div className="ui-card" style={{ background: 'var(--accent-tint-strong)', borderColor: 'var(--accent-border)' }}>
-              <h3 style={{ color: 'var(--purple-light)', fontSize: '2rem' }}>24h</h3>
+              <h3 style={{ color: 'var(--purple-light)', fontSize: 'var(--txt-2xl)' }}>24h</h3>
               <p style={{ margin: 0, color: '#dbe0ff' }}>prioridad urgencias</p>
             </div>
             <div className="ui-card" style={{ background: 'var(--accent-tint-strong)', borderColor: 'var(--accent-border)' }}>
-              <h3 style={{ color: 'var(--purple-light)', fontSize: '2rem' }}>100%</h3>
+              <h3 style={{ color: 'var(--purple-light)', fontSize: 'var(--txt-2xl)' }}>100%</h3>
               <p style={{ margin: 0, color: '#dbe0ff' }}>garantia escrita</p>
             </div>
           </div>
@@ -169,7 +169,7 @@ const Home = () => {
           }}
         >
           <div>
-            <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.1rem' }}>Contacto directo</h3>
+            <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: 'var(--txt-md)' }}>Contacto directo</h3>
             <p style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: 0 }}>
               <MapPin size={17} /> 26 de Abril 97, Venado Tuerto, Santa Fe
             </p>
@@ -203,7 +203,7 @@ const Home = () => {
           </div>
 
           <div>
-            <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.1rem' }}>Horario de atencion</h3>
+            <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: 'var(--txt-md)' }}>Horario de atencion</h3>
             <div style={{ display: 'grid', gap: '14px' }}>
               <div className="ui-card" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.1)' }}>
                 <p style={{ margin: 0, color: '#bac0e9', display: 'flex', alignItems: 'center', gap: '8px' }}>

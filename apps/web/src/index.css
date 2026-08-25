@@ -1,4 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+/* La fuente NO se importa aca: un @import dentro del CSS obliga al
+   navegador a bajar y parsear esta hoja para recien ahi descubrir que
+   necesita otra, y despues los archivos de la fuente. Son tres viajes en
+   serie antes del primer texto. Va en index.html con preconnect, que los
+   arranca en paralelo con todo lo demas. */
 
 /* =========================================================
    Paleta
@@ -12,6 +16,34 @@
    ========================================================= */
 
 :root {
+  /* ---------------------------------------------------------
+     Tipografia
+
+     Una sola familia y siete tamaños. Antes habia dos fuentes y
+     treinta y cinco medidas sueltas, la mitad por debajo de
+     12.8px --habia texto a 10.5px en chips y pies de tarjeta--.
+     En un taller la pantalla se mira con el brazo estirado, con
+     el celular sucio y a veces al sol: ahi el limite no es el
+     gusto, es si se lee o no.
+
+     El piso es 13px y no baja de ahi ni para lo secundario. El
+     cuerpo es 16px, que ademas es el minimo que evita que Safari
+     haga zoom al enfocar un campo.
+
+     Inter en vez de Outfit + Space Grotesk: altura de x mas
+     grande, numeros tabulares de verdad, y una sola familia que
+     cargar en un celular con señal mala.
+     --------------------------------------------------------- */
+  --fuente: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --txt-xs: 0.8125rem;   /* 13px - etiquetas, pies de tarjeta */
+  --txt-sm: 0.875rem;    /* 14px - texto secundario */
+  --txt-base: 1rem;      /* 16px - cuerpo */
+  --txt-md: 1.0625rem;   /* 17px - titulo de tarjeta */
+  --txt-lg: 1.25rem;     /* 20px - titulo de seccion */
+  --txt-xl: 1.5rem;      /* 24px - titulo de pantalla */
+  --txt-2xl: 1.875rem;   /* 30px - numeros que se leen de lejos */
+
   --primary: #131a24;
   --primary-soft: #1f2833;
 
@@ -125,13 +157,13 @@ body,
 
 body {
   margin: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--fuente);
   /* Fondo plano. Los dos halos de color que habia antes teñian las
      tarjetas de arriba de la pagina y no las de abajo. */
   background: var(--bg-app);
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
-  line-height: 1.45;
+  line-height: 1.5;
   /* Sin transicion. El fondo y el color del body dependen de variables
      que cambian al pasar a modo oscuro, y animar justo esas dos deja a
      Chromium mostrando el valor viejo: el fondo de la pagina quedaba
@@ -145,7 +177,7 @@ h3,
 h4 {
   margin: 0;
   color: var(--primary);
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: var(--fuente);
   letter-spacing: -0.02em;
 }
 
@@ -230,7 +262,7 @@ textarea[readonly] {
   cursor: pointer;
   font-family: inherit;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: var(--txt-base);
   line-height: 1.2;
   white-space: nowrap;
   transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
@@ -281,7 +313,7 @@ textarea[readonly] {
 
 .ui-btn--sm {
   padding: 0.55rem 1rem;
-  font-size: 0.82rem;
+  font-size: var(--txt-sm);
 }
 
 .ui-btn--md {
@@ -290,7 +322,7 @@ textarea[readonly] {
 
 .ui-btn--lg {
   padding: 0.85rem 1.4rem;
-  font-size: 0.97rem;
+  font-size: var(--txt-base);
 }
 
 .ui-btn:disabled,
@@ -315,7 +347,7 @@ textarea[readonly] {
 }
 
 .ui-field__label {
-  font-size: 0.8rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -371,14 +403,14 @@ textarea[readonly] {
 .ui-field__error {
   margin: 0;
   color: var(--danger);
-  font-size: 0.82rem;
+  font-size: var(--txt-sm);
 }
 
 .ui-alert {
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
   padding: 0.7rem 0.9rem;
-  font-size: 0.9rem;
+  font-size: var(--txt-sm);
 }
 
 /* Los colores de texto salen de las variables, asi el modo oscuro no
@@ -450,16 +482,8 @@ textarea[readonly] {
 }
 
 .ui-spinner-label {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.protected-loading-state {
-  min-height: 72vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8);
+  font-size: var(--txt-sm);
+  font-weight: 600;
 }
 
 .grid-responsive {
@@ -527,7 +551,7 @@ textarea[readonly] {
   background: none;
   border: none;
   color: #ffffff;
-  font-size: 1.8rem;
+  font-size: var(--txt-2xl);
   cursor: pointer;
   padding: 0 10px;
 }
@@ -573,7 +597,7 @@ textarea[readonly] {
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
-  font-size: 1.5rem;
+  font-size: var(--txt-xl);
   color: #ffffff;
 }
 
@@ -607,7 +631,7 @@ textarea[readonly] {
   gap: 10px;
   color: #ffffff;
   font-weight: 700;
-  font-size: 1.08rem;
+  font-size: var(--txt-md);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -634,8 +658,8 @@ textarea[readonly] {
 
 .nav-link {
   color: #d8dbf1;
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: var(--txt-base);
   transition: color 0.2s ease;
 }
 
@@ -666,7 +690,7 @@ textarea[readonly] {
 
 .menu-icon {
   display: none;
-  font-size: 1.8rem;
+  font-size: var(--txt-2xl);
   cursor: pointer;
   color: #ffffff;
 }
@@ -888,7 +912,7 @@ textarea[readonly] {
     border-radius: 22px;
     text-decoration: none;
     color: #5c6675;
-    font-size: 0.67rem;
+    font-size: var(--txt-xs);
     font-weight: 600;
     letter-spacing: 0.01em;
     transition: color 0.2s ease, transform 0.14s ease;
@@ -1095,14 +1119,14 @@ body.dark-mode .barra-mobile-item.activo::before {
 }
 
 .pantalla-titulo {
-  font-size: 1.5rem;
+  font-size: var(--txt-xl);
   margin: 0;
   letter-spacing: -0.02em;
 }
 
 .pantalla-sub {
   margin: 3px 0 0;
-  font-size: 0.87rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
 }
 
@@ -1205,7 +1229,7 @@ body.dark-mode .barra-mobile-item.activo::before {
   border-radius: 999px;
   background: var(--accent);
   color: #ffffff;
-  font-size: 0.66rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   line-height: 18px;
   text-align: center;
@@ -1240,7 +1264,7 @@ body.dark-mode .barra-mobile-item.activo::before {
   background: var(--surface);
   color: var(--text-light);
   font-family: inherit;
-  font-size: 0.84rem;
+  font-size: var(--txt-sm);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -1308,7 +1332,7 @@ body.dark-mode .barra-mobile-item.activo::before {
 
 .fila-titulo {
   font-weight: 700;
-  font-size: 1rem;
+  font-size: var(--txt-base);
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1318,7 +1342,7 @@ body.dark-mode .barra-mobile-item.activo::before {
 
 .fila-nro {
   flex-shrink: 0;
-  font-size: 0.78rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   color: var(--text-light);
   font-variant-numeric: tabular-nums;
@@ -1326,7 +1350,7 @@ body.dark-mode .barra-mobile-item.activo::before {
 
 .fila-sub {
   margin-top: 3px;
-  font-size: 0.85rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1370,7 +1394,7 @@ button.fila-link {
   margin: 0 15px;
   padding: 12px 0 14px;
   border-top: 1px solid var(--border);
-  font-size: 0.87rem;
+  font-size: var(--txt-sm);
 }
 
 .fila-dato {
@@ -1394,7 +1418,7 @@ button.fila-link {
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface-soft);
-  font-size: 0.77rem;
+  font-size: var(--txt-xs);
   font-weight: 600;
   color: var(--text-light);
   white-space: nowrap;
@@ -1407,7 +1431,7 @@ button.fila-link {
 }
 
 .importe {
-  font-size: 1.05rem;
+  font-size: var(--txt-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1473,8 +1497,8 @@ button.fila-link {
   background: none;
   color: var(--text-main);
   font-family: inherit;
-  font-size: 0.89rem;
-  font-weight: 500;
+  font-size: var(--txt-sm);
+  font-weight: 600;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
@@ -1507,9 +1531,81 @@ button.fila-link {
 
 .contador {
   margin-top: 12px;
-  font-size: 0.8rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   text-align: center;
+}
+
+/* Cuantas hay, arriba de la lista. Al pie recien se lee despues de
+   recorrerlas todas, que es cuando ya no sirve saber cuantas eran. */
+.contador--arriba {
+  margin: 0 0 10px;
+  text-align: left;
+  font-weight: 600;
+}
+
+/* Texto solo para lectores de pantalla: da nombre a un boton que a la
+   vista se explica con su icono. */
+.sr-solo {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------- Filtros puestos, a la vista --------- */
+/* El punto sobre el embudo avisaba de que la lista venia recortada pero
+   no de por que: habia que abrir el panel y recorrer los campos para
+   encontrar cual tenia algo. Cada filtro con su cruz se saca de un
+   toque y sin abrir nada. */
+
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.chip-filtro {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 11px;
+  min-height: 36px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--txt-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-filtro:hover {
+  background: var(--accent-tint-strong);
+}
+
+.chip-filtro--todo {
+  border-style: dashed;
+  background: none;
+  color: var(--text-light);
+  border-color: var(--border-fuerte);
+}
+
+.chip-filtro--todo:hover {
+  background: var(--surface-soft);
+  color: var(--text-main);
+}
+
+/* Un vacio con salida: el boton necesita despegarse del texto. */
+.vacio > .btn {
+  margin-top: 4px;
 }
 
 /* --------- Panel de filtros desplegable --------- */
@@ -1532,7 +1628,7 @@ button.fila-link {
 .campo-label {
   display: block;
   margin-bottom: 5px;
-  font-size: 0.73rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1586,7 +1682,7 @@ button.fila-link {
   background: var(--gradient-primary);
   color: #fff;
   font: inherit;
-  font-size: 1rem;
+  font-size: var(--txt-base);
   font-weight: 700;
   cursor: pointer;
   box-shadow: var(--shadow-medio);
@@ -1604,7 +1700,7 @@ button.fila-link {
 
 .paso__hint {
   margin-top: 7px;
-  font-size: 0.8rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   text-align: center;
 }
@@ -1624,7 +1720,7 @@ button.fila-link {
 .dato__label {
   display: block;
   margin-bottom: 3px;
-  font-size: 0.73rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1632,7 +1728,7 @@ button.fila-link {
 }
 
 .dato__valor {
-  font-size: 0.95rem;
+  font-size: var(--txt-base);
   overflow-wrap: anywhere;
 }
 
@@ -1666,13 +1762,13 @@ button.fila-link {
 
 .seccion__titulo {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--txt-base);
   font-weight: 700;
 }
 
 .seccion__ayuda {
   margin: 2px 0 0;
-  font-size: 0.83rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
 }
 
@@ -1720,12 +1816,12 @@ button.fila-link {
 
 .doc__titulo {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: var(--txt-base);
 }
 
 .doc__sub {
   margin-top: 2px;
-  font-size: 0.83rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
   overflow-wrap: anywhere;
 }
@@ -1824,6 +1920,13 @@ body.dark-mode .barra-guardar {
     min-height: 42px;
     padding: 9px 16px;
   }
+
+  /* Misma regla para los filtros puestos: sacar un filtro sin querer
+     por apuntarle a un blanco de 36px es peor que no poder sacarlo. */
+  .chip-filtro {
+    min-height: 42px;
+    padding: 9px 14px;
+  }
 }
 
 /* En el celular el titulo y su accion no entran en una fila: el
@@ -1864,7 +1967,7 @@ body.dark-mode .barra-guardar {
 }
 
 .estado-intro h2 {
-  font-size: 1.7rem;
+  font-size: var(--txt-2xl);
   margin: 0 0 8px;
 }
 
@@ -1909,7 +2012,7 @@ body.dark-mode .barra-guardar {
   display: inline-block;
   padding: 5px 13px;
   border-radius: 999px;
-  font-size: 0.76rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1924,7 +2027,7 @@ body.dark-mode .barra-guardar {
 
 .estado-orden {
   margin: 12px 0 0;
-  font-size: 1.25rem;
+  font-size: var(--txt-lg);
 }
 
 /* --------- Linea de tiempo --------- */
@@ -1972,7 +2075,7 @@ body.dark-mode .barra-guardar {
 .hito__fecha {
   flex-shrink: 0;
   min-width: 52px;
-  font-size: 0.85rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
   font-variant-numeric: tabular-nums;
 }
@@ -1998,7 +2101,7 @@ body.dark-mode .barra-guardar {
   margin-top: 20px;
   padding: 14px;
   border-radius: var(--radius-md);
-  font-size: 0.92rem;
+  font-size: var(--txt-base);
 }
 
 .estado-nota--listo {
@@ -2100,7 +2203,7 @@ body.dark-mode .barra-guardar {
   .doc-tabla td[data-etq='P. unitario'] {
     display: inline-block;
     width: auto;
-    font-size: 0.85rem;
+    font-size: var(--txt-sm);
     color: #64748b;
   }
 
@@ -2145,7 +2248,7 @@ body.dark-mode .barra-guardar {
 }
 
 .rev-h3 {
-  font-size: 1.05rem;
+  font-size: var(--txt-md);
   margin-top: 26px;
   margin-bottom: 12px;
 }
@@ -2154,7 +2257,7 @@ body.dark-mode .barra-guardar {
   display: block;
   margin-bottom: 6px;
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: var(--txt-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-light);
@@ -2182,7 +2285,7 @@ body.dark-mode .barra-guardar {
 }
 
 .rev-fuente {
-  font-size: 0.76rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   margin-top: 4px;
   font-style: italic;
@@ -2245,7 +2348,7 @@ body.dark-mode .barra-guardar {
   grid-template-columns: 26px 1fr 1fr 1fr 40px;
   gap: 7px;
   margin-bottom: 5px;
-  font-size: 0.66rem;
+  font-size: var(--txt-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -2260,7 +2363,7 @@ body.dark-mode .barra-guardar {
 }
 
 .rev-seccion__n {
-  font-size: 0.76rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   font-weight: 700;
   text-align: center;
@@ -2308,13 +2411,13 @@ body.dark-mode .barra-guardar {
 
 .rev-verfoto strong {
   display: block;
-  font-size: 0.95rem;
+  font-size: var(--txt-base);
 }
 
 .rev-verfoto small {
   display: block;
   color: var(--text-light);
-  font-size: 0.8rem;
+  font-size: var(--txt-xs);
 }
 
 .rev-verfoto svg {
@@ -2431,76 +2534,53 @@ body.dark-mode .barra-guardar {
 
 .panel__saludo h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: var(--txt-xl);
   letter-spacing: -0.01em;
 }
 
 .panel__saludo p {
   margin: 3px 0 0;
   color: var(--text-light);
-  font-size: 0.88rem;
+  font-size: var(--txt-sm);
 }
 
 /* Dos columnas tambien en el telefono: los cuatro numeros son para
    leer de un vistazo, y apilados quedaban en dos pantallas. */
-.panel__numeros {
+/* Renglon del grafico por estado: es navegacion, no decoracion. */
+.barra-estado {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.numero {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-top: 3px solid var(--accent);
-  border-radius: 14px;
-  background: var(--surface);
+  gap: 5px;
+  padding: 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius-sm);
   color: inherit;
   text-decoration: none;
-  box-shadow: var(--shadow-sm);
 }
 
-.numero__cab {
+.barra-estado:hover {
+  background: var(--surface-soft);
+}
+
+.barra-estado__fila {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  font-size: var(--txt-sm);
 }
 
-.numero__titulo {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--text-light);
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.numero__valor {
-  font-size: 1.9rem;
-  font-weight: 800;
-  line-height: 1.15;
+.barra-estado__fila strong {
   font-variant-numeric: tabular-nums;
 }
 
-.numero__pista {
-  font-size: 0.76rem;
-  color: var(--text-light);
+.barra-estado__riel {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
 }
 
-.panel__dos {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.panel__dos > article {
-  min-width: 0;
+.barra-estado:hover .barra-estado__riel {
+  background: var(--bg-muted);
 }
 
 .ficha-reciente {
@@ -2518,7 +2598,7 @@ body.dark-mode .barra-guardar {
   background: var(--surface-soft);
   text-decoration: none;
   color: inherit;
-  font-size: 0.9rem;
+  font-size: var(--txt-sm);
 }
 
 .ficha-reciente__n {
@@ -2537,16 +2617,8 @@ body.dark-mode .barra-guardar {
 }
 
 @media (min-width: 900px) {
-  .panel__numeros {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .panel__dos {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
   .panel__saludo h2 {
-    font-size: 1.7rem;
+    font-size: var(--txt-2xl);
   }
 }
 
@@ -2563,7 +2635,7 @@ body.dark-mode .barra-guardar {
 
 .accesos__titulo {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: var(--txt-xs);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -2585,7 +2657,7 @@ body.dark-mode .barra-guardar {
   background: none;
   border-radius: 8px;
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--txt-xs);
   font-weight: 600;
   color: var(--accent);
   cursor: pointer;
@@ -2631,7 +2703,7 @@ body.dark-mode .barra-guardar {
 }
 
 .acceso__label {
-  font-size: 0.72rem;
+  font-size: var(--txt-xs);
   font-weight: 600;
   line-height: 1.25;
   overflow: hidden;
@@ -2648,7 +2720,7 @@ body.dark-mode .barra-guardar {
   background: none;
   color: var(--text-light);
   font: inherit;
-  font-size: 0.88rem;
+  font-size: var(--txt-sm);
   cursor: pointer;
 }
 
@@ -2735,9 +2807,9 @@ body.dark-mode .barra-guardar {
 
 .hoja__ayuda {
   margin: 6px 16px 10px;
-  font-size: 0.84rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .hoja__cuerpo {
@@ -2750,7 +2822,7 @@ body.dark-mode .barra-guardar {
 
 .hoja__grupo {
   margin: 12px 6px 5px;
-  font-size: 0.68rem;
+  font-size: var(--txt-xs);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.09em;
@@ -2789,7 +2861,7 @@ body.dark-mode .barra-guardar {
 
 .hoja__item-ayuda {
   display: block;
-  font-size: 0.78rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2921,7 +2993,7 @@ body.dark-mode .barra-guardar {
   border-radius: 999px;
   background: var(--danger);
   color: var(--surface);
-  font-size: 0.66rem;
+  font-size: var(--txt-xs);
   font-weight: 800;
   line-height: 1;
 }
@@ -3007,7 +3079,7 @@ body.dark-mode .barra-guardar {
 }
 
 .progreso__label {
-  font-size: 0.7rem;
+  font-size: var(--txt-xs);
   font-weight: 600;
   line-height: 1.25;
   color: var(--text-light);
@@ -3031,8 +3103,8 @@ body.dark-mode .barra-guardar {
 
 .cobranza__monto {
   margin-top: 2px;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.75rem;
+  font-family: var(--fuente);
+  font-size: var(--txt-2xl);
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -3060,13 +3132,13 @@ body.dark-mode .barra-guardar {
   flex-wrap: wrap;
   gap: 4px 12px;
   margin-top: 8px;
-  font-size: 0.82rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
 }
 
 .cobranza__vacia {
   margin: 0;
-  font-size: 0.88rem;
+  font-size: var(--txt-sm);
   color: var(--text-light);
 }
 
@@ -3131,12 +3203,12 @@ body.dark-mode .barra-guardar {
 }
 
 .pago__titulo {
-  font-size: 0.9rem;
+  font-size: var(--txt-sm);
   font-weight: 600;
 }
 
 .pago__sub {
-  font-size: 0.79rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3152,7 +3224,7 @@ body.dark-mode .barra-guardar {
    que entrego el cliente, abajo lo que se le descuenta a la deuda.
    Verlos juntos es lo que evita la discusion de fin de mes. */
 .pago__imputa {
-  font-size: 0.73rem;
+  font-size: var(--txt-xs);
   color: var(--text-light);
   font-variant-numeric: tabular-nums;
 }
@@ -3190,7 +3262,7 @@ body.dark-mode .barra-guardar {
 
 .campo-ayuda {
   margin: 8px 0 0;
-  font-size: 0.82rem;
+  font-size: var(--txt-sm);
   line-height: 1.4;
   color: var(--text-light);
 }
@@ -3215,7 +3287,7 @@ body.dark-mode .barra-guardar {
 }
 
 .campo-monto__signo {
-  font-size: 1.2rem;
+  font-size: var(--txt-lg);
   font-weight: 700;
   color: var(--text-light);
 }
@@ -3225,8 +3297,8 @@ body.dark-mode .barra-guardar {
   padding: 0;
   border: none;
   background: none;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 1.5rem;
+  font-family: var(--fuente);
+  font-size: var(--txt-xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-main);
@@ -3264,7 +3336,7 @@ body.dark-mode .barra-guardar {
   background: var(--surface);
   color: var(--text-light);
   font: inherit;
-  font-size: 0.79rem;
+  font-size: var(--txt-xs);
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
@@ -3309,7 +3381,7 @@ body.dark-mode .barra-guardar {
   background: none;
   color: var(--accent);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: var(--txt-sm);
   font-weight: 600;
   text-align: left;
   cursor: pointer;
@@ -3329,4 +3401,832 @@ body.dark-mode .barra-guardar {
 
 .hoja__form > .campo-grupo:first-child {
   margin-top: 0;
+}
+
+
+/* =========================================================
+   Ficha de motor - vista de lectura
+   =========================================================
+   Un documento, no un formulario con los campos apagados.
+   Se lee parado frente al banco, con el motor desarmado y el
+   telefono en una mano, para buscar UN numero. Todo lo de aca
+   esta al servicio de eso: pocos bloques, numeros grandes y de
+   ancho fijo, y ningun casillero vacio en el medio. */
+
+.ficha {
+  display: grid;
+  gap: 14px;
+  /* El ancho de lectura comodo no crece con el monitor. Una tabla
+     de paso y vueltas a 1400px obliga a barrer la cabeza de un lado
+     al otro para unir la fila con su valor. */
+  max-width: 760px;
+}
+
+.ficha__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ficha__cab {
+  padding: 18px 18px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.ficha__nro {
+  display: inline-block;
+  font-size: var(--txt-xs);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ficha__titulo {
+  margin: 4px 0 0;
+  font-size: var(--txt-xl);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  /* La descripcion viene de una ficha de papel escrita a mano y suele
+     estar toda en mayusculas ("MOTOR BATIDOR"). Se respeta: es como
+     la nombra el taller. */
+  overflow-wrap: anywhere;
+}
+
+.ficha__sub {
+  margin: 5px 0 0;
+  color: var(--text-light);
+  font-size: var(--txt-base);
+}
+
+.ficha__uso {
+  margin: 2px 0 0;
+  color: var(--text-light);
+  font-size: var(--txt-sm);
+}
+
+.ficha__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+}
+
+
+/* ---------- Bloques ---------- */
+
+.ficha__seccion {
+  padding: 16px 18px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.ficha__seccion-cab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--text-light);
+}
+
+.ficha__seccion-cab h3 {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--txt-xs);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+
+/* ---------- Pares etiqueta / valor ---------- */
+
+.ficha__datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px 18px;
+  margin: 0;
+}
+
+.ficha__dato {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.ficha__dato-et {
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-light);
+}
+
+.ficha__dato-val {
+  font-size: var(--txt-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+
+/* ---------- Circuitos ---------- */
+
+.ficha__circuitos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+
+.circuito {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  min-width: 0;
+}
+
+.circuito__tipo {
+  margin: 0 0 12px;
+  font-size: var(--txt-xs);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.circuito__cabos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px 16px;
+  margin: 0 0 14px;
+}
+
+/* Tabla paso <-> vueltas.
+
+   Es el motivo por el que se abre la ficha. En el papel son dos
+   renglones que hay que leer en paralelo, y el error clasico es
+   saltar de renglon; en pantalla cada seccion es una fila y el
+   numero de orden va adelante para poder ir cantando "la tres". */
+
+.tabla-paso {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla-paso th {
+  padding: 0 10px 7px;
+  text-align: right;
+  font-size: var(--txt-xs);
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border-fuerte);
+}
+
+.tabla-paso td {
+  padding: 9px 10px;
+  text-align: right;
+  /* Grande a proposito: se lee de reojo, con las manos ocupadas y el
+     telefono apoyado en el banco. */
+  font-size: var(--txt-md);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabla-paso tr:last-child td {
+  border-bottom: none;
+}
+
+/* La columna del numero de seccion es una guia, no un dato: va chica,
+   a la izquierda y en gris, para no competir con las otras dos. */
+.tabla-paso th.tabla-paso__n,
+.tabla-paso td.tabla-paso__n {
+  width: 34px;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: left;
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  color: var(--text-light);
+}
+
+.tabla-paso__tachado {
+  margin-right: 7px;
+  font-size: var(--txt-sm);
+  font-weight: 600;
+  color: var(--text-light);
+  text-decoration-thickness: 2px;
+}
+
+.circuito__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 2px solid var(--border-fuerte);
+  font-size: var(--txt-sm);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-light);
+  font-weight: 700;
+}
+
+.circuito__total strong {
+  font-size: var(--txt-md);
+  color: var(--text-main);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+
+/* ---------- Aislaciones ---------- */
+
+.aislaciones {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.aislacion {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  min-width: 0;
+}
+
+.aislacion__que {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--txt-base);
+  overflow-wrap: anywhere;
+}
+
+.aislacion__medida {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.aislacion__cant {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-tint-strong);
+  color: var(--accent);
+  font-size: var(--txt-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+
+/* ---------- Observaciones ---------- */
+
+.ficha__obs {
+  margin: 0;
+  /* Vienen copiadas del pie de la ficha de papel, con sus saltos de
+     linea. Aplastarlas en un parrafo unico mezcla dos notas que en el
+     papel estaban separadas. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  font-size: var(--txt-base);
+}
+
+
+/* ---------- Fotos ---------- */
+
+.ficha__fotos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.ficha__foto {
+  position: relative;
+  display: block;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+
+.ficha__foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ficha__foto-sin {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-size: var(--txt-xs);
+  color: var(--text-light);
+}
+
+/* La foto del papel es la fuente contra la que se verifica todo lo
+   demas: se distingue sin tener que abrirla para descubrir cual era. */
+.ficha__foto-tag {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+
+/* ---------- Visor a pantalla completa ---------- */
+
+.visor {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.visor__fondo {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  background: rgba(9, 12, 17, 0.92);
+  cursor: zoom-out;
+}
+
+.visor img {
+  position: relative;
+  max-width: 100%;
+  max-height: 92vh;
+  border-radius: var(--radius-md);
+  /* La foto de una ficha manuscrita se mira entera y despues se le
+     hace zoom con los dedos; `contain` evita recortar justo el
+     renglon que se venia a leer. */
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.visor__cerrar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.visor__cerrar:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+@media (min-width: 760px) {
+  .ficha {
+    gap: 16px;
+  }
+
+  .ficha__titulo {
+    font-size: var(--txt-2xl);
+  }
+
+  /* Arranque y trabajo lado a lado recien cuando entran de verdad.
+     Antes de eso la tabla se angosta y los numeros se parten. */
+  .ficha__circuitos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* =========================================================
+   Panel: la cola del dia
+
+   Tres renglones como maximo, y solo los que piden hacer
+   algo. En cero el renglon no existe --no se muestra un cero
+   grande-- porque un taller sin pendientes tiene que verse
+   vacio y no lleno de ceros que hay que leer para descartar.
+
+   El color del borde izquierdo es el mismo codigo que usa la
+   pantalla de reparaciones: verde lo terminado, ambar lo que
+   espera, rojo la plata que se fue sin cobrar. Que el rojo
+   signifique lo mismo en las dos pantallas es lo que permite
+   entenderlo sin leerlo.
+   ========================================================= */
+
+.tareas {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.tarea {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  /* El borde grueso va a la izquierda y no arriba: en una lista
+     apilada, el ojo baja por ese canto y el color se lee en
+     vertical de un saque. */
+  border-left: 4px solid var(--tono);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+}
+
+.tarea:hover {
+  border-color: var(--border-fuerte);
+  border-left-color: var(--tono);
+  box-shadow: var(--shadow-medio);
+}
+
+.tarea:active {
+  transform: translateY(1px);
+}
+
+.tarea--listo { --tono: var(--success); }
+.tarea--espera { --tono: var(--warning); }
+.tarea--deuda { --tono: var(--danger); }
+
+.tarea__icono {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--tono);
+}
+
+.tarea__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.tarea__titulo {
+  font-size: var(--txt-base);
+  font-weight: 600;
+}
+
+.tarea__n {
+  font-size: var(--txt-md);
+  font-weight: 800;
+  color: var(--tono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tarea__pista {
+  font-size: var(--txt-sm);
+  color: var(--text-light);
+}
+
+.tarea__flecha {
+  flex-shrink: 0;
+  color: var(--text-light);
+}
+
+.tareas__vacio {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 18px 16px;
+  border: 1px dashed var(--border-fuerte);
+  border-radius: var(--radius-md);
+  color: var(--text-light);
+}
+
+.tareas__vacio > svg {
+  flex-shrink: 0;
+  color: var(--success);
+}
+
+.tareas__vacio strong {
+  display: block;
+  color: var(--text-main);
+  font-size: var(--txt-base);
+}
+
+.tareas__vacio span {
+  font-size: var(--txt-sm);
+}
+
+/* El acceso a Informes: al pie y en voz baja. Lo que esta ahi se
+   consulta cada tanto, no todos los dias. */
+.panel__informes {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-light);
+  font-size: var(--txt-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.panel__informes:hover {
+  border-color: var(--border-fuerte);
+  color: var(--text-main);
+}
+
+@media (min-width: 900px) {
+  .tareas {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+
+/* ---------- Informes ---------- */
+
+.informe__numeros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.informe__numero {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+/* El importe cobrado necesita mas ancho que un conteo de dos
+   digitos, y ademas es el unico que no todos pueden ver. */
+.informe__numero--ancho {
+  grid-column: 1 / -1;
+}
+
+.informe__titulo {
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.informe__valor {
+  font-size: var(--txt-2xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.informe__pista {
+  font-size: var(--txt-sm);
+  color: var(--text-light);
+}
+
+
+/* ---------- "Esto entendi" ---------- */
+/*
+   Los filtros que puso la busqueda por palabras, a la vista y
+   removibles de a uno. Un filtro aplicado que no se ve es
+   indistinguible de un error del traductor: la lista viene
+   corta y no hay forma de saber si es porque no hay fichas o
+   porque entendio "Czerweny" donde iba otra cosa.
+*/
+.leido {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.leido__rotulo {
+  font-size: var(--txt-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-light);
+}
+
+.leido__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--accent-border);
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font: inherit;
+  font-size: var(--txt-xs);
+  cursor: pointer;
+}
+
+.leido__chip:hover {
+  border-color: var(--accent);
+}
+
+.leido__chip strong {
+  font-weight: 700;
+}
+
+.leido__limpiar {
+  padding: 4px 2px;
+  border: none;
+  background: none;
+  color: var(--text-light);
+  font: inherit;
+  font-size: var(--txt-xs);
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.leido__limpiar:hover {
+  color: var(--text-main);
+}
+
+/* El aviso de datos dudosos lleva al campo, asi que necesita sitio para
+   el boton: en el telefono se apila, en pantalla ancha va al costado. */
+.rev-dudosos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rev-dudosos > .btn {
+  align-self: flex-start;
+}
+
+@media (min-width: 560px) {
+  .rev-dudosos {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .rev-dudosos > .btn {
+    flex-shrink: 0;
+  }
+}
+
+
+/* =========================================================
+   Esqueletos de carga
+
+   El brillo que cruza no es decoracion: es lo que distingue
+   "esto se esta cargando" de "esto quedo vacio". Sin
+   movimiento, un bloque gris parece un error de la pantalla.
+
+   Los colores salen de las mismas variables que el resto, asi
+   que el esqueleto se ve bien en modo oscuro sin una sola
+   regla aparte.
+   ========================================================= */
+
+.esq {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--bg-muted) 25%,
+    var(--surface-soft) 37%,
+    var(--bg-muted) 63%
+  );
+  background-size: 400% 100%;
+  animation: esq-brillo 1.4s ease-in-out infinite;
+}
+
+@keyframes esq-brillo {
+  from { background-position: 100% 50%; }
+  to { background-position: 0 50%; }
+}
+
+/* Quien pidio menos movimiento igual necesita ver que algo esta
+   cargando: se cambia el brillo que viaja por un latido suave. */
+@media (prefers-reduced-motion: reduce) {
+  .esq {
+    animation: esq-latido 1.8s ease-in-out infinite;
+    background: var(--bg-muted);
+  }
+
+  @keyframes esq-latido {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+}
+
+.esq-envoltura {
+  /* Aparece con un retraso minimo. Una carga de 80ms que alcanza a
+     dibujar el esqueleto y lo saca enseguida se ve como un parpadeo,
+     y un parpadeo se lee como un error. */
+  animation: esq-entra 0.25s ease-out both;
+}
+
+@keyframes esq-entra {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.esq-cab {
+  margin-bottom: 18px;
+}
+
+.esq-chips {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.esq-lista {
+  display: grid;
+  gap: 10px;
+}
+
+.esq-fila {
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.esq-fila__cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.esq-fila__etiquetas {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.esq-seccion {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.esq-seccion:first-child {
+  margin-top: 0;
+}
+
+.esq-datos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px 18px;
+  margin-top: 14px;
 }

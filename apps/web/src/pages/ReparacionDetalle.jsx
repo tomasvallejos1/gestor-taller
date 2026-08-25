@@ -6,7 +6,7 @@ import {
   AlertTriangle, Phone,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import Modal from '../components/Modal';
 import HojaPago from '../components/HojaPago';
@@ -24,6 +24,7 @@ import {
 import * as remitos from '../lib/remitos';
 import * as facturas from '../lib/facturas';
 import { ETIQUETA_ESTADO_FACTURA, COLOR_ESTADO_FACTURA, letraFactura } from '../lib/facturas';
+import { copiarTexto } from '../lib/navegador';
 
 /**
  * Una orden de reparacion.
@@ -153,13 +154,17 @@ const ReparacionDetalle = () => {
     setCargando(true);
     setError('');
     try {
-      const r = await obtenerReparacion(id);
+      // Los dos pedidos salen juntos: no dependen uno del otro y en
+      // serie se suman las dos latencias. Los pagos son de editores;
+      // pedirlos como lector es un viaje que siempre vuelve vacio.
+      const [r, p] = await Promise.all([
+        obtenerReparacion(id),
+        esEditor ? listarPagos(id) : Promise.resolve([]),
+      ]);
       if (!r) { setError('No encontramos esa orden.'); return; }
       setRep(r);
       setDiagnostico(r.diagnostico ?? '');
-      // Los pagos son de editores: pedirlos como lector es un viaje que
-      // siempre vuelve vacio.
-      setPagos(esEditor ? await listarPagos(id) : []);
+      setPagos(p);
     } catch (e) {
       setError(e.message ?? 'No se pudo cargar la orden.');
     } finally {
@@ -256,9 +261,13 @@ const ReparacionDetalle = () => {
   };
 
   const copiarLinkRemito = async () => {
-    await navigator.clipboard.writeText(`${window.location.origin}/r/${rep.remito.token_publico}`);
-    setCopiadoRemito(true);
-    setTimeout(() => setCopiadoRemito(false), 2200);
+    const url = `${window.location.origin}/r/${rep.remito.token_publico}`;
+    if (await copiarTexto(url)) {
+      setCopiadoRemito(true);
+      setTimeout(() => setCopiadoRemito(false), 2200);
+    } else {
+      setError(`No se pudo copiar automáticamente. El link es: ${url}`);
+    }
   };
 
   const guardarImporte = async (valor) => {
@@ -288,7 +297,7 @@ const ReparacionDetalle = () => {
   };
 
   if (cargando) {
-    return <div style={{ padding: '48px' }}><Spinner label="Cargando..." size="lg" centered /></div>;
+    return <Esqueleto tipo="detalle" />;
   }
   if (!rep) {
     return (

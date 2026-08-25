@@ -4,10 +4,11 @@ import {
   ArrowLeft, Plus, X, Save, FileDown, Share2, Check, Search, Pencil, Trash2, ListPlus,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import { useEsMobile } from '../lib/useMediaQuery';
 import { listarCatalogo, calcularTotales, pesos } from '../lib/presupuestos';
+import { copiarTexto } from '../lib/navegador';
 import {
   obtenerRemito, actualizarRemito, guardarItems, generarPdf, MEDIOS_PAGO,
 } from '../lib/remitos';
@@ -153,13 +154,16 @@ const RemitoForm = () => {
 
   const copiarLink = async () => {
     const url = `${window.location.origin}/r/${remito.token_publico}`;
-    await navigator.clipboard.writeText(url);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2200);
+    if (await copiarTexto(url)) {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2200);
+    } else {
+      setError(`No se pudo copiar automáticamente. El link es: ${url}`);
+    }
   };
 
   if (cargando) {
-    return <div style={{ padding: '48px' }}><Spinner label="Cargando..." size="lg" centered /></div>;
+    return <Esqueleto tipo="formulario" />;
   }
   if (!remito) {
     return (
@@ -176,7 +180,7 @@ const RemitoForm = () => {
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: '9px',
     border: '1px solid var(--border)', background: 'var(--surface)',
-    color: 'inherit', boxSizing: 'border-box', fontSize: '16px', fontFamily: 'inherit',
+    color: 'inherit', boxSizing: 'border-box', fontSize: 'var(--txt-base)', fontFamily: 'inherit',
   };
 
   return (
@@ -199,7 +203,7 @@ const RemitoForm = () => {
         <div className="ui-card" style={{ padding: '16px' }}>
           <label className="campo-label" htmlFor="rm-cliente">Cliente</label>
           <div style={{ fontWeight: 700 }}>{remito.cliente?.nombre ?? 'Consumidor final'}</div>
-          <div style={{ fontSize: '0.84rem', color: 'var(--text-light)', marginTop: '4px' }}>
+          <div style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', marginTop: '4px' }}>
             El cliente y sus datos fiscales se congelaron al emitir el remito. Se cambian desde la ficha del cliente antes de emitir uno nuevo.
           </div>
         </div>
@@ -225,7 +229,7 @@ const RemitoForm = () => {
       </div>
 
       <div className="ui-card" style={{ padding: esMobile ? '14px' : '20px', marginBottom: '16px' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '1.05rem' }}>Detalle</h3>
+        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: 'var(--txt-md)' }}>Detalle</h3>
 
         {items.length === 0 ? (
           <div className="vacio" style={{ padding: '26px 16px' }}>
@@ -288,13 +292,13 @@ const RemitoForm = () => {
                 borderRadius: '10px', maxHeight: '230px', overflowY: 'auto', boxShadow: 'var(--shadow-strong)',
               }}>
                 {catalogo.length === 0 ? (
-                  <div style={{ padding: '14px', fontSize: '0.86rem', color: 'var(--text-light)' }}>
+                  <div style={{ padding: '14px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
                     La lista de precios esta vacia. Cargala desde{' '}
                     <Link to="/sistema/catalogo" style={{ color: 'var(--accent)', fontWeight: 600 }}>Lista de precios</Link>.
                   </div>
                 ) : catalogo.map((c) => (
                   <button key={c.id} type="button" onClick={() => elegirDelCatalogo(c)}
-                    style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', width: '100%', textAlign: 'left', padding: '11px 13px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: 'inherit', fontSize: '0.9rem' }}>
+                    style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', width: '100%', textAlign: 'left', padding: '11px 13px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: 'inherit', fontSize: 'var(--txt-sm)' }}>
                     <span>{c.descripcion}</span>
                     <strong style={{ whiteSpace: 'nowrap' }}>{pesos(c.precio)}</strong>
                   </button>
@@ -336,7 +340,7 @@ const RemitoForm = () => {
           </div>
 
           {avisoRenglon && (
-            <div style={{ marginTop: '8px', fontSize: '0.84rem', color: 'var(--danger)' }}>{avisoRenglon}</div>
+            <div style={{ marginTop: '8px', fontSize: 'var(--txt-sm)', color: 'var(--danger)' }}>{avisoRenglon}</div>
           )}
         </div>
 
@@ -355,7 +359,7 @@ const RemitoForm = () => {
               <span>IVA {remito.iva_pct}%</span><strong>{pesos(totales.iva)}</strong>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800, borderTop: '1px solid var(--border)', paddingTop: '9px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-lg)', fontWeight: 800, borderTop: '1px solid var(--border)', paddingTop: '9px' }}>
             <span>Total</span><span>{pesos(totales.total)}</span>
           </div>
         </div>

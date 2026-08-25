@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, Plus, X, Save, AlertTriangle, Camera, FileText, Trash2 } from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import { useAuth } from '../context/AuthContext';
 import { useEsMobile } from '../lib/useMediaQuery';
@@ -47,6 +47,49 @@ const FORM_VACIO = {
 };
 
 const ETIQUETA_CIRCUITO = { arranque: 'Arranque', trabajo: 'Trabajo' };
+
+/**
+ * Un campo con su etiqueta.
+ *
+ * Vive ACA AFUERA, y tiene que seguir aca afuera.
+ *
+ * Estaba definido adentro de MotorForm. Eso creaba una funcion nueva en
+ * cada render, y para React una funcion distinta es otro tipo de
+ * componente: en vez de actualizar el <input> lo desmontaba y montaba
+ * uno nuevo en su lugar. Un input recien montado no tiene el foco, asi
+ * que cada tecla lo perdia: escribir "MOTOR BATIDOR" en la descripcion
+ * era escribir una letra, volver a tocar el campo, escribir la
+ * siguiente. Y como el formulario se guarda con lo que quedo escrito,
+ * el modo mas comodo de completarlo era el que mas errores metia.
+ *
+ * `comun` junta lo que todos los campos comparten --el estado, si es
+ * solo lectura, los estilos-- para no repetirlo doce veces.
+ */
+const Campo = ({ etiqueta, campo, ancho, placeholder, comun, ...props }) => {
+  const {
+    form, soloLectura, cambiar, labelStyle, inputStyle,
+  } = comun;
+
+  // Al VER una ficha, un placeholder gris ("Ej: 60") se lee igual que
+  // un dato real y el que mira termina creyendo que la ficha dice 60.
+  // En modo lectura no hay ejemplos: o esta el dato, o dice N/A.
+  const vacio = soloLectura && !String(form[campo] ?? '').trim();
+
+  return (
+    <div style={ancho ? { gridColumn: `span ${ancho}` } : undefined}>
+      <label style={labelStyle} htmlFor={`c-${campo}`}>{etiqueta}</label>
+      <input
+        id={`c-${campo}`}
+        style={vacio ? { ...inputStyle, color: 'var(--text-light)', fontWeight: 400 } : inputStyle}
+        value={vacio ? 'N/A' : (form[campo] ?? '')}
+        onChange={(e) => cambiar(campo, e.target.value)}
+        readOnly={soloLectura}
+        placeholder={soloLectura ? undefined : placeholder}
+        {...props}
+      />
+    </div>
+  );
+};
 
 const MotorForm = () => {
   const navigate = useNavigate();
@@ -315,44 +358,29 @@ const MotorForm = () => {
   };
 
   if (cargando) {
-    return <div style={{ padding: '48px' }}><Spinner label="Cargando ficha..." size="lg" centered /></div>;
+    return <Esqueleto tipo="formulario" />;
   }
 
-  const labelStyle = { display: 'block', marginBottom: '7px', fontWeight: '700', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
+  const labelStyle = { display: 'block', marginBottom: '7px', fontWeight: '700', fontSize: 'var(--txt-xs)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-light)' };
   const inputStyle = {
     width: '100%', padding: '11px 13px', borderRadius: '9px', boxSizing: 'border-box',
-    fontFamily: 'inherit', fontSize: '1rem', color: 'inherit',
+    fontFamily: 'inherit', fontSize: 'var(--txt-base)', color: 'inherit',
     border: soloLectura ? '1px solid transparent' : '1px solid var(--border)',
     background: soloLectura ? 'var(--surface-soft)' : 'var(--surface)',
     fontWeight: soloLectura ? '600' : '400',
     pointerEvents: soloLectura ? 'none' : 'auto',
   };
-  const seccionTitulo = { borderLeft: '4px solid var(--accent)', paddingLeft: '14px', margin: '28px 0 18px', fontSize: '1.15rem', fontWeight: '800' };
+  const seccionTitulo = { borderLeft: '4px solid var(--accent)', paddingLeft: '14px', margin: '28px 0 18px', fontSize: 'var(--txt-md)', fontWeight: '800' };
 
   // En modo lectura los ejemplos se apagan en todos lados, no solo en
   // los campos con <Campo>: las grillas de bobinado y aislacion tambien
   // mostraban "0,45" y "30" en gris como si fueran datos.
   const ph = (ejemplo) => (soloLectura ? undefined : ejemplo);
 
-  const Campo = ({ etiqueta, campo, ancho, placeholder, ...props }) => {
-    // Al VER una ficha, un placeholder gris ("Ej: 60") se lee igual que
-    // un dato real y el que mira termina creyendo que la ficha dice 60.
-    // En modo lectura no hay ejemplos: o esta el dato, o dice N/A.
-    const vacio = soloLectura && !String(form[campo] ?? '').trim();
-    return (
-      <div style={ancho ? { gridColumn: `span ${ancho}` } : undefined}>
-        <label style={labelStyle} htmlFor={`c-${campo}`}>{etiqueta}</label>
-        <input
-          id={`c-${campo}`}
-          style={vacio ? { ...inputStyle, color: 'var(--text-light)', fontWeight: 400 } : inputStyle}
-          value={vacio ? 'N/A' : (form[campo] ?? '')}
-          onChange={(e) => cambiar(campo, e.target.value)}
-          readOnly={soloLectura}
-          placeholder={soloLectura ? undefined : placeholder}
-          {...props}
-        />
-      </div>
-    );
+  // Lo que todos los campos necesitan, en un solo objeto: ver el
+  // comentario de <Campo>, que vive fuera de este componente.
+  const comun = {
+    form, soloLectura, cambiar, labelStyle, inputStyle,
   };
 
   const grilla = (min = '160px') => ({
@@ -367,7 +395,7 @@ const MotorForm = () => {
         <Link to="/sistema/motores" className="btn btn-secondary" style={{ textDecoration: 'none', fontWeight: 600 }}>
           <ArrowLeft size={15} /> Volver
         </Link>
-        <h2 style={{ margin: 0, fontSize: '1.5rem' }}>
+        <h2 style={{ margin: 0, fontSize: 'var(--txt-xl)' }}>
           {modoVer ? 'Ficha' : esEdicion ? 'Editar ficha' : 'Nueva ficha'}
           {form.nro_motor ? <span style={{ color: 'var(--text-light)' }}> #{form.nro_motor}</span> : null}
         </h2>
@@ -390,16 +418,16 @@ const MotorForm = () => {
 
         <h3 style={{ ...seccionTitulo, marginTop: 0 }}>Identificacion</h3>
         <div style={grilla()}>
-          <Campo
+          <Campo comun={comun}
             etiqueta="Descripcion *"
             campo="descripcion"
             ancho={esMobile ? undefined : 2}
             required
             placeholder={ph('Ej: MOTOR BATIDOR')}
           />
-          <Campo etiqueta="Marca" campo="marca" placeholder={ph('Ej: Czerweny')} />
-          <Campo etiqueta="Modelo" campo="modelo" placeholder={ph('Ej: ZIII')} />
-          <Campo etiqueta="Aplicacion / uso" campo="aplicacion" placeholder={ph('Ej: bombeador')} />
+          <Campo comun={comun} etiqueta="Marca" campo="marca" placeholder={ph('Ej: Czerweny')} />
+          <Campo comun={comun} etiqueta="Modelo" campo="modelo" placeholder={ph('Ej: ZIII')} />
+          <Campo comun={comun} etiqueta="Aplicacion / uso" campo="aplicacion" placeholder={ph('Ej: bombeador')} />
           <div>
             <label style={labelStyle} htmlFor="c-tipo">Tipo electrico</label>
             <select
@@ -420,18 +448,18 @@ const MotorForm = () => {
 
         <h3 style={seccionTitulo}>Datos electricos</h3>
         <div style={grilla('140px')}>
-          <Campo etiqueta="Potencia (HP)" campo="hp_texto" placeholder={ph('Ej: 1/2')} />
-          <Campo etiqueta="Amperaje" campo="amperaje_texto" placeholder={ph('Ej: 4,5 A')} />
-          <Campo etiqueta="Capacitor" campo="capacitor_texto" placeholder={ph('Ej: 8 µF')} />
-          <Campo etiqueta="Ranuras" campo="ranuras" inputMode="numeric" placeholder={ph('Ej: 24')} />
-          <Campo etiqueta="RPM" campo="rpm" inputMode="numeric" placeholder={ph('Ej: 1450')} />
+          <Campo comun={comun} etiqueta="Potencia (HP)" campo="hp_texto" placeholder={ph('Ej: 1/2')} />
+          <Campo comun={comun} etiqueta="Amperaje" campo="amperaje_texto" placeholder={ph('Ej: 4,5 A')} />
+          <Campo comun={comun} etiqueta="Capacitor" campo="capacitor_texto" placeholder={ph('Ej: 8 µF')} />
+          <Campo comun={comun} etiqueta="Ranuras" campo="ranuras" inputMode="numeric" placeholder={ph('Ej: 24')} />
+          <Campo comun={comun} etiqueta="RPM" campo="rpm" inputMode="numeric" placeholder={ph('Ej: 1450')} />
         </div>
 
         <h3 style={seccionTitulo}>Medidas de carcasa (mm)</h3>
         <div style={grilla('140px')}>
-          <Campo etiqueta="Largo" campo="largo_mm" inputMode="decimal" placeholder={ph('Ej: 45')} />
-          <Campo etiqueta="Diametro interior" campo="diam_int_mm" inputMode="decimal" placeholder={ph('Ej: 73')} />
-          <Campo etiqueta="Diametro exterior" campo="diam_ext_mm" inputMode="decimal" placeholder={ph('Ej: 124')} />
+          <Campo comun={comun} etiqueta="Largo" campo="largo_mm" inputMode="decimal" placeholder={ph('Ej: 45')} />
+          <Campo comun={comun} etiqueta="Diametro interior" campo="diam_int_mm" inputMode="decimal" placeholder={ph('Ej: 73')} />
+          <Campo comun={comun} etiqueta="Diametro exterior" campo="diam_ext_mm" inputMode="decimal" placeholder={ph('Ej: 124')} />
         </div>
 
         <h3 style={seccionTitulo}>Bobinado</h3>
@@ -441,7 +469,7 @@ const MotorForm = () => {
               key={circuito.tipo}
               style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', background: 'var(--surface-soft)' }}
             >
-              <h4 style={{ margin: '0 0 14px', textTransform: 'uppercase', fontSize: '0.82rem', letterSpacing: '0.1em' }}>
+              <h4 style={{ margin: '0 0 14px', textTransform: 'uppercase', fontSize: 'var(--txt-sm)', letterSpacing: '0.1em' }}>
                 {ETIQUETA_CIRCUITO[circuito.tipo]}
               </h4>
 
@@ -501,15 +529,15 @@ const MotorForm = () => {
               <div style={{ display: 'grid', gap: '8px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 1fr 36px', gap: '8px', alignItems: 'center' }}>
                   <span />
-                  <span style={{ ...labelStyle, margin: 0, fontSize: '0.64rem' }}>Paso</span>
-                  <span style={{ ...labelStyle, margin: 0, fontSize: '0.64rem' }}>Vueltas</span>
-                  <span style={{ ...labelStyle, margin: 0, fontSize: '0.64rem' }}>Tachado</span>
+                  <span style={{ ...labelStyle, margin: 0, fontSize: 'var(--txt-xs)' }}>Paso</span>
+                  <span style={{ ...labelStyle, margin: 0, fontSize: 'var(--txt-xs)' }}>Vueltas</span>
+                  <span style={{ ...labelStyle, margin: 0, fontSize: 'var(--txt-xs)' }}>Tachado</span>
                   <span />
                 </div>
 
                 {circuito.secciones.map((s, i) => (
                   <div key={i} style={{ display: 'grid', gridTemplateColumns: '28px 1fr 1fr 1fr 36px', gap: '8px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-light)', fontWeight: 700 }}>{i + 1}</span>
+                    <span style={{ fontSize: 'var(--txt-xs)', color: 'var(--text-light)', fontWeight: 700 }}>{i + 1}</span>
                     <input style={{ ...inputStyle, padding: '9px 10px' }} inputMode="numeric" placeholder={ph('6')}
                       value={s.paso}
                       onChange={(e) => cambiarSeccion(circuito.tipo, i, 'paso', e.target.value)}
@@ -538,7 +566,7 @@ const MotorForm = () => {
               {!soloLectura && (
                 <button type="button" onClick={() => agregarSeccion(circuito.tipo)}
                   className="btn btn-secondary"
-                  style={{ marginTop: '10px', fontSize: '0.84rem', fontWeight: 600 }}>
+                  style={{ marginTop: '10px', fontSize: 'var(--txt-sm)', fontWeight: 600 }}>
                   <Plus size={14} /> Agregar seccion
                 </button>
               )}
@@ -547,7 +575,7 @@ const MotorForm = () => {
         </div>
 
         <h3 style={seccionTitulo}>Aislaciones</h3>
-        <p style={{ margin: '-8px 0 12px', fontSize: '0.86rem', color: 'var(--text-light)' }}>
+        <p style={{ margin: '-8px 0 12px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
           Una fila por medida. Un motor puede llevar varias (fondo de ranura,
           cuña, entre fases), cada una con su cantidad.
         </p>
@@ -559,7 +587,7 @@ const MotorForm = () => {
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1.4fr 100px 100px 100px 36px',
-              gap: '8px', fontSize: '0.7rem', fontWeight: 700,
+              gap: '8px', fontSize: 'var(--txt-xs)', fontWeight: 700,
               textTransform: 'uppercase', letterSpacing: '0.07em',
               color: 'var(--text-light)',
             }}>
@@ -607,7 +635,7 @@ const MotorForm = () => {
         {!soloLectura && (
           <button type="button" onClick={agregarAislacion}
             className="btn btn-secondary"
-            style={{ marginTop: '10px', fontSize: '0.84rem', fontWeight: 600 }}>
+            style={{ marginTop: '10px', fontSize: 'var(--txt-sm)', fontWeight: 600 }}>
             <Plus size={14} /> Agregar aislacion
           </button>
         )}
@@ -625,7 +653,7 @@ const MotorForm = () => {
         {(fotos.length > 0 || pendientes.length > 0 || !soloLectura) && (
           <>
             <h3 style={seccionTitulo}>Fotos</h3>
-            <p style={{ margin: '-8px 0 14px', fontSize: '0.86rem', color: 'var(--text-light)' }}>
+            <p style={{ margin: '-8px 0 14px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
               Marca con <FileText size={13} style={{ verticalAlign: '-2px' }} /> la foto de
               la ficha de papel: es la que devuelve el bot y contra la que se compara al
               revisar una carga automatica.
@@ -644,8 +672,9 @@ const MotorForm = () => {
                   >
                     {f.url
                       ? <img src={f.url} alt={f.es_ficha ? 'Ficha de papel' : 'Motor'}
+                          loading="lazy" decoding="async"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      : <span style={{ display: 'grid', placeItems: 'center', height: '100%', fontSize: '0.75rem', color: 'var(--text-light)' }}>sin vista</span>}
+                      : <span style={{ display: 'grid', placeItems: 'center', height: '100%', fontSize: 'var(--txt-xs)', color: 'var(--text-light)' }}>sin vista</span>}
                   </a>
                   {!soloLectura && (
                     <div style={{ display: 'flex', gap: '4px', marginTop: '5px' }}>
@@ -692,7 +721,7 @@ const MotorForm = () => {
                   width: '124px', height: '124px', borderRadius: '10px',
                   border: '2px dashed var(--border)', display: 'grid', placeItems: 'center',
                   cursor: 'pointer', color: 'var(--text-light)', textAlign: 'center',
-                  fontSize: '0.78rem', gap: '4px', alignContent: 'center',
+                  fontSize: 'var(--txt-xs)', gap: '4px', alignContent: 'center',
                 }}>
                   {/* capture abre la camara directo en el celular, que es
                       desde donde se fotografian las fichas en el taller. */}
@@ -705,7 +734,7 @@ const MotorForm = () => {
             </div>
 
             {pendientes.length > 0 && (
-              <p style={{ marginTop: '10px', fontSize: '0.85rem', color: 'var(--text-light)' }}>
+              <p style={{ marginTop: '10px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
                 {pendientes.length} foto(s) se van a subir al guardar la ficha.
               </p>
             )}

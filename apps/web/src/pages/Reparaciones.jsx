@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Plus, Search, Trash2, X, Wrench, Pencil, ArrowRight, SlidersHorizontal,
   AlertTriangle, Wallet,
@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import Hoja from '../components/Hoja';
 import HojaPago from '../components/HojaPago';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import { useAuth } from '../context/AuthContext';
@@ -67,10 +67,33 @@ const cuando = (r) => (
 const Reparaciones = () => {
   const { esEditor } = useAuth();
 
+  /**
+   * La vista y el estado se pueden pedir por URL.
+   *
+   * El panel muestra "Para retirar: 3" y antes ese numero llevaba al
+   * listado completo, sin filtrar: el que entraba tenia que volver a
+   * buscar a mano las tres ordenes que el panel le acababa de contar.
+   * Un atajo que deja al otro lado del salto la misma busqueda que uno
+   * venia a evitar no es un atajo.
+   *
+   * Ademas hace que la lista se pueda compartir y que el boton "atras"
+   * del navegador devuelva a la misma lista, no a la de por defecto.
+   */
+  const [params, setParams] = useSearchParams();
+  const vistaPedida = params.get('vista');
+  const estadoPedido = params.get('estado');
+
   const [reparaciones, setReparaciones] = useState([]);
-  const [vista, setVista] = useState('taller');
-  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
-  const [verFiltros, setVerFiltros] = useState(false);
+  const [vista, setVista] = useState(
+    () => (VISTAS.some((v) => v.id === vistaPedida) ? vistaPedida : 'taller'),
+  );
+  const [filtros, setFiltros] = useState(() => ({
+    ...FILTROS_VACIOS,
+    estado: ESTADOS.includes(estadoPedido) ? estadoPedido : '',
+  }));
+  // Con un estado pedido por URL el panel de filtros arranca abierto: si
+  // no, la lista viene recortada y no se ve por que.
+  const [verFiltros, setVerFiltros] = useState(() => ESTADOS.includes(estadoPedido));
   const [texto, setTexto] = useState('');
   const [deudores, setDeudores] = useState(0);
   const [cargando, setCargando] = useState(true);
@@ -250,7 +273,13 @@ const Reparaciones = () => {
           return (
             <button key={v.id} type="button" aria-pressed={activa}
               className={`chip${activa ? ' activo' : ''}${esDeudores && deudores > 0 ? ' chip--alerta' : ''}`}
-              onClick={() => { setVista(v.id); setFiltros(FILTROS_VACIOS); }}>
+              onClick={() => {
+                setVista(v.id);
+                setFiltros(FILTROS_VACIOS);
+                // La URL sigue a la vista para que "atras" vuelva a la
+                // lista anterior y no a la de por defecto.
+                setParams(v.id === 'taller' ? {} : { vista: v.id }, { replace: true });
+              }}>
               {v.etiqueta}
               {esDeudores && deudores > 0 && <span className="chip__punto">{deudores}</span>}
             </button>
@@ -295,7 +324,7 @@ const Reparaciones = () => {
       )}
 
       {cargando ? (
-        <div style={{ padding: '48px 0' }}><Spinner label="Cargando..." centered /></div>
+        <Esqueleto tipo="lista" />
       ) : reparaciones.length === 0 ? (
         <div className="vacio">
           <Wrench size={26} />

@@ -28,16 +28,39 @@ const COLUMNAS_LISTA = `
  *
  * @param {object} cliente cliente de Supabase ya autenticado
  * @param {{nro?: string, texto?: string, marca?: string, modelo?: string,
- *          hp?: string, tipo?: string, orden?: string,
+ *          hp?: string, tipo?: string, duenio?: string, orden?: string,
  *          pagina?: number, porPagina?: number}} filtros
  */
 export async function listarMotores(cliente, filtros = {}) {
   const {
-    nro, texto, marca, modelo, hp, tipo,
+    nro, texto, marca, modelo, hp, tipo, duenio,
     orden = 'recientes', pagina = 0, porPagina = 50,
   } = filtros;
 
+  // "Los motores de Gonzalez" no es un dato del motor: el vinculo con el
+  // cliente esta en las ordenes de reparacion. Se resuelve en dos pasos
+  // --primero que motores toco ese cliente, despues el listado de
+  // siempre acotado a esos-- en vez de con un embebido anidado, porque
+  // el filtro sobre una relacion de dos niveles obliga a inner joins que
+  // cambiarian el resto de la consulta para todos los demas casos.
+  let idsDelDuenio = null;
+  if (duenio?.trim()) {
+    const { data: ordenes, error: eOrdenes } = await cliente
+      .from('reparacion')
+      .select('motor_id, cliente:cliente_id!inner(nombre)')
+      .not('motor_id', 'is', null)
+      .ilike('cliente.nombre', `%${duenio.trim()}%`);
+    if (eOrdenes) throw eOrdenes;
+
+    idsDelDuenio = [...new Set((ordenes ?? []).map((o) => o.motor_id))];
+    // Sin coincidencias no hay nada que buscar, y un `.in` con lista
+    // vacia es sintaxis invalida para PostgREST.
+    if (idsDelDuenio.length === 0) return { motores: [], total: 0 };
+  }
+
   let q = cliente.from('motor').select(COLUMNAS_LISTA, { count: 'exact' });
+
+  if (idsDelDuenio) q = q.in('id', idsDelDuenio);
 
   if (nro) {
     const n = Number(String(nro).replace(/\D/g, ''));
@@ -46,11 +69,22 @@ export async function listarMotores(cliente, filtros = {}) {
 
   // Busqueda general sobre el indice de texto completo (descripcion,
   // marca, modelo y aplicacion juntos).
-  if (texto?.trim()) {
-    q = q.textSearch('busqueda', texto.trim().split(/\s+/).join(' & '), {
-      type: 'plain',
-      config: 'spanish',
-    });
+  //
+  // Salvo que sea un numero pelado: ahi es el N° de ficha. El numero
+  // esta escrito en el papel y marcado en el motor, asi que buscar por
+  // numero es lo mas comun que hay, y el indice de texto no lo incluye
+  // --escribir "12" no devolvia nada y parecia que la ficha no existia,
+  // con el filtro por N° escondido atras del panel de avanzados--.
+  const termino = texto?.trim();
+  if (termino) {
+    if (/^\d+$/.test(termino)) {
+      q = q.eq('nro_motor', Number(termino));
+    } else {
+      q = q.textSearch('busqueda', termino.split(/\s+/).join(' & '), {
+        type: 'plain',
+        config: 'spanish',
+      });
+    }
   }
 
   if (marca?.trim()) q = q.ilike('marca', `%${marca.trim()}%`);

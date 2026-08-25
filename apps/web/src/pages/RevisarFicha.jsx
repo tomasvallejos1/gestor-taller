@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import { useEsMobile } from '../lib/useMediaQuery';
 import {
@@ -49,7 +49,7 @@ const Campo = ({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '6px' }}>
         <label className="rev-label" htmlFor={`r-${campo}`}>{etiqueta}</label>
         {c && (
-          <span style={{ fontSize: '0.64rem', fontWeight: 700, color: COLOR_CONFIANZA[c], textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: COLOR_CONFIANZA[c], textTransform: 'uppercase' }}>
             {ETIQUETA_CONFIANZA[c]}
           </span>
         )}
@@ -174,10 +174,32 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
     }))),
   }) : []), [form, circuitos]);
 
+  // Cual de los dudosos toca mirar. No es un indice fijo: la lista se
+  // achica sola a medida que se corrigen, asi que se usa con modulo.
+  const [nDudoso, setNDudoso] = useState(0);
+
   const dudosos = useMemo(
     () => Object.entries(confianza).filter(([k, v]) => v === 'baja' && !tocados[k]),
     [confianza, tocados],
   );
+
+  /**
+   * Lleva al proximo campo dudoso: lo centra y le pone el foco.
+   *
+   * `preventScroll` en el focus porque ya scrolleo el centrado: sin eso
+   * el navegador vuelve a mover la pagina para dejarlo pegado al borde,
+   * justo debajo del teclado del telefono.
+   */
+  const irAlDudoso = () => {
+    if (!dudosos.length) return;
+    const [campo] = dudosos[nDudoso % dudosos.length];
+    const el = document.getElementById(`r-${campo}`);
+    if (el) {
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.focus({ preventScroll: true });
+    }
+    setNDudoso((n) => n + 1);
+  };
 
   const guardar = async () => {
     setGuardando(true);
@@ -217,7 +239,7 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
   };
 
   if (cargando) {
-    return <div style={{ padding: '48px' }}><Spinner label="Cargando la lectura..." size="lg" centered /></div>;
+    return <Esqueleto tipo="formulario" />;
   }
 
   if (error && !form) {
@@ -268,7 +290,7 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
         )}
       </div>
       {extraccion?.datos_json?._modelo && (
-        <div style={{ marginTop: '10px', fontSize: '0.76rem', color: 'var(--text-light)', textAlign: 'center' }}>
+        <div style={{ marginTop: '10px', fontSize: 'var(--txt-xs)', color: 'var(--text-light)', textAlign: 'center' }}>
           Leído por {extraccion.datos_json._proveedor} · {extraccion.datos_json._modelo}
         </div>
       )}
@@ -290,10 +312,22 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
         </div>
       </Alert>
 
+      {/* El aviso lleva al campo, no solo avisa. En el celular esta
+          ficha mide tres pantallas: saber que hay cuatro datos dudosos
+          sin poder ir a ellos obliga a barrer el formulario entero
+          buscando bordes de color. */}
       {dudosos.length > 0 && (
         <Alert variant="warning" className="mb-3">
-          Hay <strong>{dudosos.length}</strong> dato(s) que el sistema marcó como dudosos y
-          todavía no revisaste.
+          <div className="rev-dudosos">
+            <span>
+              {dudosos.length === 1
+                ? 'Hay 1 dato que el sistema leyó con dudas y todavía no revisaste.'
+                : `Hay ${dudosos.length} datos que el sistema leyó con dudas y todavía no revisaste.`}
+            </span>
+            <button type="button" className="btn btn-secondary" onClick={irAlDudoso}>
+              {dudosos.length === 1 ? 'Ir al dato' : `Ir al ${(nDudoso % dudosos.length) + 1}° de ${dudosos.length}`}
+            </button>
+          </div>
         </Alert>
       )}
 
@@ -367,7 +401,7 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
           })}
         </div>
         <button type="button" onClick={agregarAislacion} className="btn btn-secondary"
-          style={{ marginTop: '10px', fontSize: '0.84rem', fontWeight: 600 }}>
+          style={{ marginTop: '10px', fontSize: 'var(--txt-sm)', fontWeight: 600 }}>
           <Plus size={14} /> Agregar aislación
         </button>
 
@@ -379,18 +413,18 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
               <div key={c.tipo} className="rev-bloque rev-bloque--circuito"
                 style={conf ? { borderColor: COLOR_CONFIANZA[conf], borderWidth: '2px' } : undefined}>
                 <div className="rev-bloque__cab">
-                  <h4 style={{ margin: 0, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>
+                  <h4 style={{ margin: 0, textTransform: 'uppercase', fontSize: 'var(--txt-xs)', letterSpacing: '0.1em' }}>
                     {ETIQUETA_CIRCUITO[c.tipo]}
                   </h4>
                   {conf && (
-                    <span style={{ fontSize: '0.64rem', fontWeight: 700, color: COLOR_CONFIANZA[conf], textTransform: 'uppercase' }}>
+                    <span style={{ fontSize: 'var(--txt-xs)', fontWeight: 700, color: COLOR_CONFIANZA[conf], textTransform: 'uppercase' }}>
                       {ETIQUETA_CONFIANZA[conf]}
                     </span>
                   )}
                 </div>
 
                 {fuente[`circuito_${c.tipo}`] && (
-                  <div style={{ fontSize: '0.78rem', color: 'var(--danger)', marginBottom: '10px' }}>
+                  <div style={{ fontSize: 'var(--txt-xs)', color: 'var(--danger)', marginBottom: '10px' }}>
                     {fuente[`circuito_${c.tipo}`]}
                   </div>
                 )}
@@ -452,7 +486,7 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
                   ))}
                 </div>
                 <button type="button" onClick={() => agregarSeccion(c.tipo)}
-                  className="btn btn-secondary" style={{ marginTop: '10px', fontSize: '0.82rem' }}>
+                  className="btn btn-secondary" style={{ marginTop: '10px', fontSize: 'var(--txt-sm)' }}>
                   <Plus size={13} /> Sección
                 </button>
               </div>
@@ -520,7 +554,7 @@ const RevisarFicha = ({ id: idProp, alSalir }) => {
         title="Guardar la ficha"
         message={
           dudosos.length > 0
-            ? `Quedan ${dudosos.length} dato(s) marcados como dudosos que no revisaste. `
+            ? `${dudosos.length === 1 ? 'Queda 1 dato marcado como dudoso' : `Quedan ${dudosos.length} datos marcados como dudosos`} que no revisaste. `
               + 'Se guarda igual, pero conviene compararlos con la foto primero. ¿Continuar?'
             : 'Se crea la ficha con estos datos y se guarda la foto original junto a ella.'
         }

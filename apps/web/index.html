@@ -9,6 +9,25 @@
     <title>Bobinados David</title>
 
     <!--
+      La fuente, lo antes posible y en paralelo.
+
+      preconnect abre la conexion TLS con los dos dominios de Google
+      Fonts mientras todavia se esta bajando el HTML, asi que cuando el
+      CSS de la fuente se pide, el handshake ya esta hecho. En una red
+      movil eso son varios cientos de milisegundos antes del primer
+      texto.
+
+      Solo cuatro pesos: son los que el CSS usa. Cada peso de mas es un
+      archivo de mas que baja un celular con señal mala.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap"
+    />
+
+    <!--
       vite-plugin-pwa inyecta el manifest.webmanifest solo. Lo que sigue
       es lo que el manifest NO cubre: Safari en iOS no lo lee para nada
       de esto, y usa en cambio estas etiquetas propias de Apple.

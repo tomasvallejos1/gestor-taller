@@ -171,7 +171,7 @@ const NuevaClave = () => {
             <KeyRound size={28} />
           </div>
 
-          <h2 style={{ fontSize: '1.85rem', marginBottom: '8px' }}>Definir nueva clave</h2>
+          <h2 style={{ fontSize: 'var(--txt-2xl)', marginBottom: '8px' }}>Definir nueva clave</h2>
           <p style={{ color: 'var(--text-light)', margin: 0 }}>
             Elegi una clave de al menos {MINIMO} caracteres.
           </p>

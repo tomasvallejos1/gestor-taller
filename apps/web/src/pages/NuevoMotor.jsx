@@ -171,14 +171,14 @@ const NuevoMotor = () => {
             <ScanLine size={38} />
           </div>
 
-          <h2 style={{ fontSize: '1.2rem', margin: '22px 0 8px' }}>
+          <h2 style={{ fontSize: 'var(--txt-lg)', margin: '22px 0 8px' }}>
             {subiendo ? 'Subiendo la foto...'
               : demorado ? 'Está tardando más de lo normal'
               : estadoLectura === 'pendiente' ? 'Arrancando la lectura'
               : 'Leyendo la ficha'}
           </h2>
 
-          <p style={{ color: 'var(--text-light)', fontSize: '0.92rem', margin: 0, lineHeight: 1.55 }}>
+          <p style={{ color: 'var(--text-light)', fontSize: 'var(--txt-base)', margin: 0, lineHeight: 1.55 }}>
             {subiendo && 'Un segundo, se está achicando y subiendo la imagen.'}
             {!subiendo && !demorado && (
               'Suele tardar entre 25 y 45 segundos. Podés bloquear el celular: la lectura sigue del lado del servidor y te espera acá.'
@@ -189,7 +189,7 @@ const NuevoMotor = () => {
           </p>
 
           {!subiendo && (
-            <div style={{ marginTop: '10px', fontSize: '0.8rem', color: 'var(--text-light)', fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ marginTop: '10px', fontSize: 'var(--txt-xs)', color: 'var(--text-light)', fontVariantNumeric: 'tabular-nums' }}>
               {segundos < 60 ? `${segundos} s` : `${Math.floor(segundos / 60)} min ${segundos % 60} s`}
             </div>
           )}
@@ -197,7 +197,7 @@ const NuevoMotor = () => {
           <div className="barra-progreso" aria-hidden="true"><span /></div>
 
           <button type="button" onClick={volverAElegir}
-            className="btn btn-secondary btn-bloque" style={{ marginTop: '20px', fontSize: '0.88rem' }}>
+            className="btn btn-secondary btn-bloque" style={{ marginTop: '20px', fontSize: 'var(--txt-sm)' }}>
             {demorado ? 'Volver y seguir después' : 'Cancelar'}
           </button>
         </div>
@@ -224,7 +224,7 @@ const NuevoMotor = () => {
         <Link to="/sistema/motores" className="btn btn-secondary" style={{ textDecoration: 'none', fontWeight: 600 }}>
           <ArrowLeft size={15} /> Volver
         </Link>
-        <h2 style={{ margin: 0, fontSize: '1.45rem' }}>Nueva ficha</h2>
+        <h2 style={{ margin: 0, fontSize: 'var(--txt-xl)' }}>Nueva ficha</h2>
       </div>
 
       {error ? (
@@ -237,14 +237,14 @@ const NuevoMotor = () => {
           {fichaId ? (
             <button type="button" onClick={reintentar}
               className="btn btn-secondary"
-              style={{ marginTop: '10px', fontSize: '0.86rem' }}>
+              style={{ marginTop: '10px', fontSize: 'var(--txt-sm)' }}>
               <RotateCw size={14} /> Reintentar con la misma foto
             </button>
           ) : null}
         </Alert>
       ) : null}
 
-      <p style={{ color: 'var(--text-light)', fontSize: '0.95rem', marginTop: 0, marginBottom: '18px' }}>
+      <p style={{ color: 'var(--text-light)', fontSize: 'var(--txt-base)', marginTop: 0, marginBottom: '18px' }}>
         ¿Cómo querés cargarla?
       </p>
 
@@ -252,8 +252,8 @@ const NuevoMotor = () => {
         <button type="button" style={tarjeta}
           onClick={() => (esMobile ? camara.current?.click() : entrada.current?.click())}>
           <span style={icono('var(--gradient-primary)')}><Camera size={22} /></span>
-          <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Escanear la ficha</span>
-          <span style={{ fontSize: '0.88rem', color: 'var(--text-light)', lineHeight: 1.5 }}>
+          <span style={{ fontWeight: 700, fontSize: 'var(--txt-md)' }}>Escanear la ficha</span>
+          <span style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', lineHeight: 1.5 }}>
             {esMobile
               ? 'Sacale una foto a la ficha de papel. El sistema la lee y vos revisás antes de guardar.'
               : 'Elegí la foto de la ficha de papel. El sistema la lee y vos revisás antes de guardar.'}
@@ -262,8 +262,8 @@ const NuevoMotor = () => {
 
         <button type="button" style={tarjeta} onClick={() => setParams({ modo: 'manual' })}>
           <span style={icono('var(--surface-2, #64748b)')}><PencilLine size={22} /></span>
-          <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Cargar a mano</span>
-          <span style={{ fontSize: '0.88rem', color: 'var(--text-light)', lineHeight: 1.5 }}>
+          <span style={{ fontWeight: 700, fontSize: 'var(--txt-md)' }}>Cargar a mano</span>
+          <span style={{ fontSize: 'var(--txt-sm)', color: 'var(--text-light)', lineHeight: 1.5 }}>
             El formulario en blanco, campo por campo.
           </span>
         </button>
@@ -272,12 +272,12 @@ const NuevoMotor = () => {
       {esMobile && (
         <button type="button" onClick={() => entrada.current?.click()}
           className="btn btn-secondary"
-          style={{ marginTop: '12px', width: '100%', fontSize: '0.88rem' }}>
+          style={{ marginTop: '12px', width: '100%', fontSize: 'var(--txt-sm)' }}>
           Elegir una foto de la galería
         </button>
       )}
 
-      <div style={{ marginTop: '20px', display: 'flex', gap: '9px', alignItems: 'flex-start', color: 'var(--text-light)', fontSize: '0.84rem' }}>
+      <div style={{ marginTop: '20px', display: 'flex', gap: '9px', alignItems: 'flex-start', color: 'var(--text-light)', fontSize: 'var(--txt-sm)' }}>
         <TriangleAlert size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
         <span>
           La lectura automática nunca se guarda sola: siempre la revisás vos antes.

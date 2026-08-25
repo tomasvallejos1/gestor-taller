@@ -93,9 +93,12 @@ export async function listarReparaciones({
   const buscaCliente = Boolean(t) && !esNumero;
   const filtraPago = Boolean(pago) || vista === 'deudores';
 
+  // Sin `count`: nadie muestra el total y pedirlo obliga a Postgres a
+  // recorrer entero el conjunto filtrado ademas de traer la pagina. La
+  // pantalla cuenta las filas que recibe, que es lo que dibuja.
   let q = supabase
     .from('reparacion')
-    .select(armar({ clienteInner: buscaCliente, cobranzaInner: filtraPago }), { count: 'exact' });
+    .select(armar({ clienteInner: buscaCliente, cobranzaInner: filtraPago }));
 
   if (estado) q = q.eq('estado', estado);
   else if (vista === 'taller') q = q.in('estado', ABIERTOS);
@@ -116,9 +119,9 @@ export async function listarReparaciones({
 
   q = q.order('ingreso', { ascending: false }).limit(100);
 
-  const { data, error, count } = await q;
+  const { data, error } = await q;
   if (error) throw error;
-  return { reparaciones: data ?? [], total: count ?? 0 };
+  return { reparaciones: data ?? [], total: data?.length ?? 0 };
 }
 
 /** La orden con lo que necesita su pantalla de detalle: presupuesto,

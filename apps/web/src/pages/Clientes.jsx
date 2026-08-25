@@ -7,6 +7,7 @@ import {
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import { useAuth } from '../context/AuthContext';
@@ -170,7 +171,7 @@ const Clientes = () => {
   const inputStyle = {
     width: '100%', padding: '11px 13px', borderRadius: '9px',
     border: '1px solid var(--border)', background: 'var(--surface)',
-    color: 'inherit', boxSizing: 'border-box', fontSize: '16px', fontFamily: 'inherit',
+    color: 'inherit', boxSizing: 'border-box', fontSize: 'var(--txt-base)', fontFamily: 'inherit',
   };
 
   return (
@@ -192,7 +193,7 @@ const Clientes = () => {
       {editando && (
         <form onSubmit={guardar} className="ui-card" style={{ padding: esMobile ? '16px' : '22px', marginBottom: '16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-            <h3 style={{ margin: 0, fontSize: '1.05rem' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--txt-md)' }}>
               {editando.id ? 'Editar cliente' : 'Nuevo cliente'}
             </h3>
             <button type="button" onClick={cerrarFormulario} className="icono-btn"
@@ -259,7 +260,7 @@ const Clientes = () => {
               display: 'flex', alignItems: 'center', gap: '7px', width: '100%',
               margin: '16px 0 0', padding: '11px 0', minHeight: '44px',
               background: 'none', border: 'none', cursor: 'pointer',
-              font: 'inherit', fontWeight: 600, fontSize: '0.9rem',
+              font: 'inherit', fontWeight: 600, fontSize: 'var(--txt-sm)',
               color: 'var(--accent)', textAlign: 'left',
             }}>
             <ChevronDown size={16} style={{ transform: verFiscal ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s ease' }} />
@@ -316,7 +317,7 @@ const Clientes = () => {
                   aria-invalid={Boolean(problemaDoc)}
                 />
                 {problemaDoc && (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--danger)', marginTop: '5px' }}>
+                  <div style={{ fontSize: 'var(--txt-xs)', color: 'var(--danger)', marginTop: '5px' }}>
                     {problemaDoc}
                   </div>
                 )}
@@ -352,7 +353,7 @@ const Clientes = () => {
 
       {cargando ? (
         <div style={{ padding: '48px 0' }}>
-          <Spinner label="Cargando clientes..." centered />
+          <Esqueleto tipo="lista" />
         </div>
       ) : clientes.length === 0 ? (
         <div className="vacio">

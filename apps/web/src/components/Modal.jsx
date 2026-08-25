@@ -31,7 +31,7 @@ const Modal = ({
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
         border: '1px solid var(--border)'
       }}>
-        <h3 style={{ marginTop: 0, color: isDanger ? '#ef4444' : 'var(--text-main)', fontSize: '1.25rem' }}>
+        <h3 style={{ marginTop: 0, color: isDanger ? '#ef4444' : 'var(--text-main)', fontSize: 'var(--txt-lg)' }}>
           {title}
         </h3>
         <p style={{ color: 'var(--text-light)', lineHeight: '1.5', marginBottom: '24px' }}>

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { comprimirImagen } from './fotos';
+import { idUnico } from './navegador';
 import { armarSecciones, parsearNumero, parsearEntero, parsearAlambre, parsearAbertura } from '@shared/parseo.js';
 import { mapearLineas } from '@shared/mapeo-ficha.js';
 
@@ -51,7 +52,7 @@ export async function cargarFichaPorFoto(archivo, { origen = 'web' } = {}) {
   const { blob } = await comprimirImagen(archivo);
 
   const extension = blob.type === 'image/jpeg' ? 'jpg' : 'png';
-  const ruta = `extracciones/${crypto.randomUUID()}.${extension}`;
+  const ruta = `extracciones/${idUnico()}.${extension}`;
 
   // La ruta se conoce antes de subir, asi que la fila no tiene por que
   // esperar al archivo: se hacen las dos cosas juntas y se ahorra una

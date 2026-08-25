@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Pencil, X, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useEsMobile } from '../lib/useMediaQuery';
 import {
-  DESTINOS, GRUPOS, MAXIMO, leerAccesos, guardarAccesos, destinoDe, puedeVer,
+  DESTINOS, GRUPOS, MAXIMO, EN_BARRA_MOBILE,
+  leerAccesos, guardarAccesos, destinoDe, puedeVer,
 } from '../lib/accesos';
 
 /**
@@ -16,7 +18,8 @@ import {
  */
 const AccesosDirectos = () => {
   const { esEditor } = useAuth();
-  const [ids, setIds] = useState(leerAccesos);
+  const esMobile = useEsMobile();
+  const [ids, setIds] = useState(() => leerAccesos(esEditor));
   const [editando, setEditando] = useState(false);
   const [borrador, setBorrador] = useState(ids);
 
@@ -83,7 +86,7 @@ const AccesosDirectos = () => {
 
           <div className="hoja__panel">
             <div className="hoja__cab">
-              <h3 style={{ margin: 0, fontSize: '1.05rem' }}>Accesos directos</h3>
+              <h3 style={{ margin: 0, fontSize: 'var(--txt-md)' }}>Accesos directos</h3>
               <button type="button" onClick={() => setEditando(false)}
                 className="hoja__cerrar" aria-label="Cerrar sin guardar">
                 <X size={19} />
@@ -113,7 +116,14 @@ const AccesosDirectos = () => {
                           <span className="acceso__icono"><Icono size={17} /></span>
                           <span style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
                             <span style={{ display: 'block', fontWeight: 600 }}>{d.label}</span>
-                            <span className="hoja__item-ayuda">{d.ayuda}</span>
+                            {/* En el celular vale la pena avisar cuales ya
+                                estan en la barra de abajo: gastar un atajo
+                                en algo que esta a un toque es gastarlo. */}
+                            <span className="hoja__item-ayuda">
+                              {esMobile && EN_BARRA_MOBILE.includes(d.id)
+                                ? 'Ya está en la barra de abajo'
+                                : d.ayuda}
+                            </span>
                           </span>
                           <span className={`tilde${puesto ? ' tilde--si' : ''}`}>
                             {puesto && <Check size={14} />}

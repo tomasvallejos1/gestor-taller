@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Receipt } from 'lucide-react';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import { pesos } from '../lib/presupuestos';
 import {
   listarFacturas, ETIQUETA_ESTADO_FACTURA, COLOR_ESTADO_FACTURA, letraFactura,
@@ -60,7 +60,7 @@ const Facturas = () => {
       </div>
 
       {cargando ? (
-        <div style={{ padding: '48px 0' }}><Spinner label="Cargando..." centered /></div>
+        <Esqueleto tipo="lista" />
       ) : facturas.length === 0 ? (
         <div className="vacio">
           <Receipt size={26} />

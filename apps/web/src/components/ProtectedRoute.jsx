@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Spinner from './ui/Spinner';
+import Esqueleto from './Esqueleto';
 
 const JERARQUIA = { lector: 1, editor: 2, super: 3 };
 
@@ -14,13 +14,11 @@ const JERARQUIA = { lector: 1, editor: 2, super: 3 };
 const ProtectedRoute = ({ children, requiere }) => {
   const { user, rol, loading } = useAuth();
 
-  if (loading) {
-    return (
-      <div className="protected-loading-state">
-        <Spinner label="Preparando tu espacio..." size="lg" centered />
-      </div>
-    );
-  }
+  // Mientras se resuelve la sesion no se sabe si esta persona va a
+  // entrar o la van a mandar al login, asi que el esqueleto es el
+  // neutro: dibuja una pantalla generica y no promete una lista que
+  // quiza no llegue.
+  if (loading) return <Esqueleto tipo="pagina" />;
 
   if (!user) {
     return <Navigate to="/login" replace />;

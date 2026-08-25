@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Search, Trash2, FileText, X } from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import {
   ESTADOS, ETIQUETA_ESTADO, COLOR_ESTADO,
@@ -97,7 +97,7 @@ const Presupuestos = () => {
 
       {cargando ? (
         <div style={{ padding: '48px 0' }}>
-          <Spinner label="Cargando..." centered />
+          <Esqueleto tipo="lista" />
         </div>
       ) : presupuestos.length === 0 ? (
         <div className="vacio">

@@ -5,7 +5,7 @@ import {
   Pencil, Trash2, ListPlus,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import Button from '../components/ui/Button';
 import { useEsMobile } from '../lib/useMediaQuery';
 import { listarClientes } from '../lib/clientes';
@@ -16,6 +16,7 @@ import {
   generarPdf, estadoDe, ETIQUETA_ESTADO, COLOR_ESTADO,
 } from '../lib/presupuestos';
 import { formatearDocumento, etiquetaCondicion } from '@shared/fiscal.js';
+import { copiarTexto } from '../lib/navegador';
 
 /**
  * Alta y edicion de un presupuesto.
@@ -220,13 +221,18 @@ const PresupuestoForm = () => {
 
   const copiarLink = async () => {
     const url = `${window.location.origin}/p/${presupuesto.token_publico}`;
-    await navigator.clipboard.writeText(url);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2200);
+    if (await copiarTexto(url)) {
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2200);
+    } else {
+      // El link existe igual: si no se puede copiar, al menos se puede
+      // leer y mandar a mano en vez de quedarse sin nada.
+      setError(`No se pudo copiar automáticamente. El link es: ${url}`);
+    }
   };
 
   if (cargando) {
-    return <div style={{ padding: '48px' }}><Spinner label="Cargando..." size="lg" centered /></div>;
+    return <Esqueleto tipo="formulario" />;
   }
   if (!presupuesto) {
     return (
@@ -247,7 +253,7 @@ const PresupuestoForm = () => {
   const inputStyle = {
     width: '100%', padding: '10px 12px', borderRadius: '9px',
     border: '1px solid var(--border)', background: 'var(--surface)',
-    color: 'inherit', boxSizing: 'border-box', fontSize: '16px', fontFamily: 'inherit',
+    color: 'inherit', boxSizing: 'border-box', fontSize: 'var(--txt-base)', fontFamily: 'inherit',
   };
 
   return (
@@ -286,13 +292,13 @@ const PresupuestoForm = () => {
               precio antes de dar el nombre-- pero conviene que se vea de
               antemano que va a imprimir el PDF, y no descubrirlo despues. */}
           {!presupuesto.cliente_id && (
-            <div style={{ marginTop: '9px', fontSize: '0.84rem', color: 'var(--text-light)' }}>
+            <div style={{ marginTop: '9px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
               En el PDF va a figurar <strong>Consumidor final</strong>.
             </div>
           )}
 
           {cliente && (
-            <div style={{ marginTop: '9px', fontSize: '0.84rem', color: 'var(--text-light)', display: 'grid', gap: '3px' }}>
+            <div style={{ marginTop: '9px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)', display: 'grid', gap: '3px' }}>
               {cliente.documento && (
                 <span>{(cliente.documento_tipo ?? '').toUpperCase()} {formatearDocumento(cliente.documento_tipo, cliente.documento)}</span>
               )}
@@ -334,7 +340,7 @@ const PresupuestoForm = () => {
             </div>
           </div>
           {vence && (
-            <div style={{ marginTop: '9px', fontSize: '0.82rem', color: 'var(--text-light)' }}>
+            <div style={{ marginTop: '9px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
               Vale hasta el {vence.toLocaleDateString('es-AR')}
             </div>
           )}
@@ -343,7 +349,7 @@ const PresupuestoForm = () => {
 
       {/* ---------------- Renglones ya cargados ---------------- */}
       <div className="ui-card" style={{ padding: esMobile ? '14px' : '20px', marginBottom: '16px' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: '1.05rem' }}>Detalle</h3>
+        <h3 style={{ marginTop: 0, marginBottom: '12px', fontSize: 'var(--txt-md)' }}>Detalle</h3>
 
         {items.length === 0 ? (
           <div className="vacio" style={{ padding: '26px 16px' }}>
@@ -417,13 +423,13 @@ const PresupuestoForm = () => {
                 boxShadow: 'var(--shadow-strong)',
               }}>
                 {catalogo.length === 0 ? (
-                  <div style={{ padding: '14px', fontSize: '0.86rem', color: 'var(--text-light)' }}>
+                  <div style={{ padding: '14px', fontSize: 'var(--txt-sm)', color: 'var(--text-light)' }}>
                     La lista de precios esta vacia. Cargala desde{' '}
                     <Link to="/sistema/catalogo" style={{ color: 'var(--accent)', fontWeight: 600 }}>Lista de precios</Link>.
                   </div>
                 ) : catalogo.map((c) => (
                   <button key={c.id} type="button" onClick={() => elegirDelCatalogo(c)}
-                    style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', width: '100%', textAlign: 'left', padding: '11px 13px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: 'inherit', fontSize: '0.9rem' }}>
+                    style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', width: '100%', textAlign: 'left', padding: '11px 13px', background: 'none', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', color: 'inherit', fontSize: 'var(--txt-sm)' }}>
                     <span>{c.descripcion}</span>
                     <strong style={{ whiteSpace: 'nowrap' }}>{pesos(c.precio)}</strong>
                   </button>
@@ -468,7 +474,7 @@ const PresupuestoForm = () => {
           </div>
 
           {avisoRenglon && (
-            <div style={{ marginTop: '8px', fontSize: '0.84rem', color: 'var(--danger)' }}>
+            <div style={{ marginTop: '8px', fontSize: 'var(--txt-sm)', color: 'var(--danger)' }}>
               {avisoRenglon}
             </div>
           )}
@@ -491,7 +497,7 @@ const PresupuestoForm = () => {
               <span>IVA {presupuesto.iva_pct}%</span><strong>{pesos(totales.iva)}</strong>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.25rem', fontWeight: 800, borderTop: '1px solid var(--border)', paddingTop: '9px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--txt-lg)', fontWeight: 800, borderTop: '1px solid var(--border)', paddingTop: '9px' }}>
             <span>Total</span><span>{pesos(totales.total)}</span>
           </div>
         </div>

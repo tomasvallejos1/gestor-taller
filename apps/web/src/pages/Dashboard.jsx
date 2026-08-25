@@ -1,26 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Activity, PackageCheck, Clock, FileText, ArrowUpRight,
+  PackageCheck, Clock, Wallet, ChevronRight, Check, BarChart3,
 } from 'lucide-react';
 import Alert from '../components/ui/Alert';
 import Spinner from '../components/ui/Spinner';
 import AccesosDirectos from '../components/AccesosDirectos';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ETIQUETA_ESTADO, COLOR_ESTADO } from '../lib/reparaciones';
+import { pesos } from '../lib/presupuestos';
 
 /**
  * Panel.
  *
- * Se saco el encabezado "Centro de Operaciones": ocupaba la primera
- * pantalla entera del celular para decir el nombre de la pantalla en la
- * que uno ya esta. Lo primero que se ve ahora son los atajos y los
- * numeros, que es a lo que se entra.
+ * Es lo primero que se abre a la mañana, casi siempre de pie y con el
+ * celular en una mano. La pregunta de ese momento no es como viene el
+ * mes: es que hay que hacer hoy.
  *
- * Las tarjetas van en dos columnas incluso en el telefono. Una sola
- * columna dejaba los cuatro numeros repartidos en dos pantallas, y el
- * sentido de esto es verlos de un vistazo.
+ * Por eso quedaron solo dos cosas: la cola de pendientes y los accesos
+ * directos. El promedio de dias, el grafico por estado y las ultimas
+ * fichas se fueron a Informes --son buenos numeros, pero son de mirar
+ * sentado, y ocupaban las dos primeras pantallas del telefono todos los
+ * dias para que alguien los leyera una vez por mes--.
+ *
+ * La cola muestra unicamente lo que pide una accion, y en cero cada
+ * renglon desaparece en vez de mostrar un cero: un taller sin nada
+ * pendiente tiene que verse vacio, no lleno de ceros. Cuando no queda
+ * ninguno, lo que se ve es que esta todo al dia, que tambien es
+ * informacion.
  */
 
 const saludo = () => {
@@ -29,6 +36,46 @@ const saludo = () => {
   if (h < 20) return 'Buenas tardes';
   return 'Buenas noches';
 };
+
+/**
+ * Cada renglon lleva a SU lista, ya filtrada.
+ *
+ * `tono` define el color del borde: verde lo que esta listo, ambar lo
+ * que espera, rojo la plata que se fue sin cobrar. Es el mismo codigo
+ * de color que la pantalla de reparaciones, para que el rojo signifique
+ * lo mismo en los dos lados.
+ */
+const tareasDe = (d) => [
+  {
+    id: 'listos',
+    valor: d.listas_para_retirar,
+    titulo: 'listos para entregar',
+    pista: 'Avisale al cliente que puede pasar a buscarlo',
+    a: '/sistema/reparaciones?vista=entregar',
+    icono: PackageCheck,
+    tono: 'listo',
+  },
+  {
+    id: 'repuesto',
+    valor: d.esperando_repuesto,
+    titulo: 'esperando repuesto',
+    pista: 'Frenados hasta que llegue lo que falta',
+    a: '/sistema/reparaciones?estado=esperando_repuesto',
+    icono: Clock,
+    tono: 'espera',
+  },
+  {
+    id: 'deuda',
+    valor: d.deudores,
+    titulo: 'entregados sin cobrar',
+    // El monto en la pista y no el numero de ordenes: dos ordenes que
+    // deben mil pesos y dos que deben medio millon no son lo mismo.
+    pista: `${pesos(d.deuda)} pendientes de cobro`,
+    a: '/sistema/reparaciones?vista=deudores',
+    icono: Wallet,
+    tono: 'deuda',
+  },
+];
 
 const Dashboard = () => {
   const { perfil } = useAuth();
@@ -46,142 +93,64 @@ const Dashboard = () => {
     return () => { vigente = false; };
   }, []);
 
-  const tarjetas = datos ? [
-    {
-      titulo: 'En el taller',
-      valor: datos.reparaciones_abiertas,
-      pista: datos.ingresos_mes === 1 ? '1 ingreso este mes' : `${datos.ingresos_mes} ingresos este mes`,
-      color: 'var(--accent)',
-      icono: Activity,
-      a: '/sistema/reparaciones',
-    },
-    {
-      titulo: 'Para retirar',
-      valor: datos.listas_para_retirar,
-      pista: datos.listas_para_retirar > 0 ? 'Avisar a los clientes' : 'Nada pendiente de aviso',
-      color: 'var(--success)',
-      icono: PackageCheck,
-      a: '/sistema/reparaciones',
-    },
-    {
-      titulo: 'Esperando repuesto',
-      valor: datos.esperando_repuesto,
-      pista: datos.esperando_repuesto > 0 ? 'Trabajo en pausa' : 'Sin bloqueos',
-      color: 'var(--warning)',
-      icono: Clock,
-      a: '/sistema/reparaciones',
-    },
-    {
-      titulo: 'Fichas técnicas',
-      valor: datos.fichas,
-      pista: `${datos.clientes} cliente${datos.clientes === 1 ? '' : 's'}`,
-      color: 'var(--text-light)',
-      icono: FileText,
-      a: '/sistema/motores',
-    },
-  ] : [];
-
-  const porEstado = Object.entries(datos?.por_estado ?? {});
-  const maximo = Math.max(1, ...porEstado.map(([, n]) => n));
+  const tareas = datos ? tareasDe(datos).filter((t) => t.valor > 0) : [];
+  const abiertas = datos?.reparaciones_abiertas ?? 0;
 
   return (
     <div className="panel">
       <div className="panel__saludo">
         <h2>{saludo()}{perfil?.nombre ? `, ${perfil.nombre.split(' ')[0]}` : ''}</h2>
-        {datos?.dias_promedio != null && (
-          <p>{datos.dias_promedio} días promedio por reparación</p>
+        {datos && (
+          <p>
+            {abiertas === 0
+              ? 'No hay motores en el taller.'
+              : `${abiertas} ${abiertas === 1 ? 'motor' : 'motores'} en el taller.`}
+          </p>
         )}
       </div>
-
-      <AccesosDirectos />
 
       {error ? <Alert variant="error">{error}</Alert> : null}
 
       {!datos && !error ? (
-        <div className="ui-card" style={{ padding: '50px' }}>
-          <Spinner label="Cargando métricas..." centered />
+        <div className="ui-card" style={{ padding: '38px' }}>
+          <Spinner label="Cargando..." centered />
         </div>
       ) : datos && (
-        <>
-          <section className="panel__numeros">
-            {tarjetas.map((t) => {
-              const Icono = t.icono;
-              return (
-                <Link key={t.titulo} to={t.a} className="numero"
-                  style={{ borderTopColor: t.color }}>
-                  <div className="numero__cab">
-                    <span className="numero__titulo">{t.titulo}</span>
-                    <Icono size={15} style={{ color: t.color, flexShrink: 0 }} />
-                  </div>
-                  <span className="numero__valor">{t.valor}</span>
-                  <span className="numero__pista">{t.pista}</span>
-                </Link>
-              );
-            })}
-          </section>
+        <section className="tareas" aria-label="Pendientes de hoy">
+          {tareas.length === 0 ? (
+            <div className="tareas__vacio">
+              <Check size={20} aria-hidden="true" />
+              <div>
+                <strong>No hay nada pendiente.</strong>
+                <span>Ningún motor esperando repuesto, ninguna entrega sin cobrar.</span>
+              </div>
+            </div>
+          ) : tareas.map((t) => {
+            const Icono = t.icono;
+            return (
+              <Link key={t.id} to={t.a} className={`tarea tarea--${t.tono}`}>
+                <span className="tarea__icono"><Icono size={19} aria-hidden="true" /></span>
+                <span className="tarea__cuerpo">
+                  <strong className="tarea__titulo">
+                    <span className="tarea__n">{t.valor}</span> {t.titulo}
+                  </strong>
+                  <span className="tarea__pista">{t.pista}</span>
+                </span>
+                <ChevronRight size={18} className="tarea__flecha" aria-hidden="true" />
+              </Link>
+            );
+          })}
+        </section>
+      )}
 
-          <section className="panel__dos">
-            <article className="ui-card">
-              <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.05rem' }}>Órdenes por estado</h3>
-              <p style={{ marginTop: 0, marginBottom: '16px', color: 'var(--text-light)', fontSize: '0.88rem' }}>
-                Dónde está parado el trabajo ahora mismo.
-              </p>
+      <AccesosDirectos />
 
-              {porEstado.length === 0 ? (
-                <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.9rem' }}>
-                  Todavía no hay órdenes cargadas.{' '}
-                  <Link to="/sistema/reparaciones" style={{ color: 'var(--accent)' }}>Crear la primera</Link>.
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gap: '12px' }}>
-                  {porEstado.map(([estado, cantidad]) => (
-                    <div key={estado} style={{ display: 'grid', gap: '5px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                        <span>{ETIQUETA_ESTADO[estado] ?? estado}</span>
-                        <strong>{cantidad}</strong>
-                      </div>
-                      {/* Barra proporcional al estado mas cargado. Es una
-                          lectura relativa, no absoluta: sirve para ver de
-                          un vistazo donde se acumula el trabajo. */}
-                      <div style={{ height: '9px', borderRadius: '999px', background: 'var(--surface-soft)', overflow: 'hidden' }}>
-                        <div style={{
-                          width: `${(cantidad / maximo) * 100}%`,
-                          height: '100%',
-                          borderRadius: '999px',
-                          background: COLOR_ESTADO[estado] ?? 'var(--accent)',
-                        }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
-
-            <article className="ui-card">
-              <h3 style={{ marginTop: 0, marginBottom: '4px', fontSize: '1.05rem' }}>Últimas fichas</h3>
-              <p style={{ marginTop: 0, marginBottom: '14px', color: 'var(--text-light)', fontSize: '0.88rem' }}>
-                Lo más reciente que se cargó.
-              </p>
-
-              {(datos.ultimas_fichas ?? []).length === 0 ? (
-                <p style={{ color: 'var(--text-light)', margin: 0, fontSize: '0.9rem' }}>
-                  Sin fichas todavía.{' '}
-                  <Link to="/sistema/motores/nuevo" style={{ color: 'var(--accent)' }}>Cargar una</Link>.
-                </p>
-              ) : (
-                <div style={{ display: 'grid', gap: '8px' }}>
-                  {datos.ultimas_fichas.map((f) => (
-                    <Link key={f.id} to={`/sistema/motores/ver/${f.nro_motor}`} className="ficha-reciente">
-                      <span className="ficha-reciente__n">#{f.nro_motor}</span>
-                      <span className="ficha-reciente__desc">{f.descripcion}</span>
-                      <ArrowUpRight size={15} style={{ flexShrink: 0, opacity: 0.55 }} />
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </article>
-          </section>
-        </>
+      {datos && (
+        <Link to="/sistema/informes" className="panel__informes">
+          <BarChart3 size={16} aria-hidden="true" />
+          Cómo viene el mes
+          <ChevronRight size={16} style={{ marginLeft: 'auto' }} aria-hidden="true" />
+        </Link>
       )}
     </div>
   );

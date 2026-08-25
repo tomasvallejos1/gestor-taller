@@ -44,7 +44,7 @@ const Hoja = ({ titulo, ayuda, etiqueta, pie, onCerrar, children }) => {
 
       <div className="hoja__panel" ref={panel} tabIndex={-1}>
         <div className="hoja__cab">
-          <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{titulo}</h3>
+          <h3 style={{ margin: 0, fontSize: 'var(--txt-md)' }}>{titulo}</h3>
           <button type="button" onClick={onCerrar} className="hoja__cerrar" aria-label="Cerrar">
             <X size={19} />
           </button>

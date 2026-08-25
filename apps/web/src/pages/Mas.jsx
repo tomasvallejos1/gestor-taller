@@ -38,15 +38,15 @@ const Mas = () => {
     color: 'var(--accent)',
   };
   const tituloGrupo = {
-    fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase',
+    fontSize: 'var(--txt-xs)', fontWeight: 800, textTransform: 'uppercase',
     letterSpacing: '0.09em', color: 'var(--text-light)',
     margin: '22px 4px 8px',
   };
 
   return (
     <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-      <h2 style={{ fontSize: '1.6rem', margin: '0 0 4px' }}>Mas</h2>
-      <p style={{ color: 'var(--text-light)', fontSize: '0.9rem', marginTop: 0 }}>
+      <h2 style={{ fontSize: 'var(--txt-xl)', margin: '0 0 4px' }}>Mas</h2>
+      <p style={{ color: 'var(--text-light)', fontSize: 'var(--txt-sm)', marginTop: 0 }}>
         {perfil?.nombre ? `Hola, ${perfil.nombre}.` : ''} Todo lo que no entra abajo.
       </p>
 
@@ -68,7 +68,7 @@ const Mas = () => {
                     <span style={icono}><Icono size={17} /></span>
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: 'block', fontWeight: 600 }}>{item.label}</span>
-                      <span style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-light)' }}>{item.ayuda}</span>
+                      <span style={{ display: 'block', fontSize: 'var(--txt-xs)', color: 'var(--text-light)' }}>{item.ayuda}</span>
                     </span>
                     <ChevronRight size={17} style={{ color: 'var(--text-light)', flexShrink: 0 }} />
                   </Link>
@@ -98,7 +98,7 @@ const Mas = () => {
         </button>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', margin: '20px 0 6px', fontSize: '0.78rem', color: 'var(--text-light)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', margin: '20px 0 6px', fontSize: 'var(--txt-xs)', color: 'var(--text-light)' }}>
         <ShieldCheck size={13} />
         Bobinados David · Venado Tuerto
       </div>

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { idUnico } from './navegador';
 
 const BUCKET = 'fichas';
 
@@ -63,7 +64,7 @@ export async function subirFoto(motorId, archivo, opciones = {}) {
   const { blob } = await comprimirImagen(archivo);
 
   const extension = blob.type === 'image/jpeg' ? 'jpg' : (archivo.name.split('.').pop() || 'jpg');
-  const ruta = `motores/${motorId}/${crypto.randomUUID()}.${extension}`;
+  const ruta = `motores/${motorId}/${idUnico()}.${extension}`;
 
   const { error: errorSubida } = await supabase.storage
     .from(BUCKET)

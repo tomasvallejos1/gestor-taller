@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { Wrench } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
@@ -7,29 +7,46 @@ import Sidebar from './components/Sidebar';
 import BarraMobile from './components/BarraMobile';
 import ProtectedRoute from './components/ProtectedRoute';
 import ActualizacionPwa from './components/ActualizacionPwa';
+import Esqueleto from './components/Esqueleto';
 
+/*
+ * Las paginas se bajan cuando se visitan.
+ *
+ * Antes todo viajaba en un solo archivo de 726 KB: entrar a ver el
+ * estado de una orden implicaba descargar tambien el alta de fichas, el
+ * formulario de presupuestos y la pantalla de ajustes. En el taller eso
+ * se paga en la pantalla en blanco del arranque, con la señal que haya.
+ *
+ * Quedan directas las tres que se pintan primero --el landing, el login
+ * y el panel--: hacerlas diferidas agrega un viaje justo antes de lo
+ * unico que el usuario esta esperando ver.
+ */
 import Home from './pages/Home';
-import Status from './pages/Status';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Motores from './pages/Motores';
-import MotorForm from './pages/MotorForm';
-import Ajustes from './pages/Ajustes';
-import Clientes from './pages/Clientes';
-import Reparaciones from './pages/Reparaciones';
-import ReparacionDetalle from './pages/ReparacionDetalle';
-import NuevoMotor from './pages/NuevoMotor';
-import Mas from './pages/Mas';
 import ComingSoon from './pages/ComingSoon';
-import ForgotPassword from './pages/ForgotPassword';
-import NuevaClave from './pages/NuevaClave';
-import Presupuestos from './pages/Presupuestos';
-import PresupuestoForm from './pages/PresupuestoForm';
-import PresupuestoPublico from './pages/PresupuestoPublico';
-import Catalogo from './pages/Catalogo';
-import RemitoForm from './pages/RemitoForm';
-import RemitoPublico from './pages/RemitoPublico';
-import Facturas from './pages/Facturas';
+
+const Status = lazy(() => import('./pages/Status'));
+const Informes = lazy(() => import('./pages/Informes'));
+const Motores = lazy(() => import('./pages/Motores'));
+const MotorForm = lazy(() => import('./pages/MotorForm'));
+const FichaMotor = lazy(() => import('./pages/FichaMotor'));
+const Ajustes = lazy(() => import('./pages/Ajustes'));
+const Clientes = lazy(() => import('./pages/Clientes'));
+const Reparaciones = lazy(() => import('./pages/Reparaciones'));
+const ReparacionDetalle = lazy(() => import('./pages/ReparacionDetalle'));
+const NuevoMotor = lazy(() => import('./pages/NuevoMotor'));
+const Mas = lazy(() => import('./pages/Mas'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const NuevaClave = lazy(() => import('./pages/NuevaClave'));
+const Presupuestos = lazy(() => import('./pages/Presupuestos'));
+const PresupuestoForm = lazy(() => import('./pages/PresupuestoForm'));
+const PresupuestoPublico = lazy(() => import('./pages/PresupuestoPublico'));
+const Catalogo = lazy(() => import('./pages/Catalogo'));
+const RemitoForm = lazy(() => import('./pages/RemitoForm'));
+const RemitoPublico = lazy(() => import('./pages/RemitoPublico'));
+const Facturas = lazy(() => import('./pages/Facturas'));
+
 
 function App() {
   const { user } = useAuth();
@@ -43,10 +60,12 @@ function App() {
   // el sitio.
   if (location.pathname.startsWith('/p/') || location.pathname.startsWith('/r/')) {
     return (
-      <Routes>
-        <Route path="/p/:token" element={<PresupuestoPublico />} />
-        <Route path="/r/:token" element={<RemitoPublico />} />
-      </Routes>
+      <Suspense fallback={<Esqueleto tipo="pagina" />}>
+        <Routes>
+          <Route path="/p/:token" element={<PresupuestoPublico />} />
+          <Route path="/r/:token" element={<RemitoPublico />} />
+        </Routes>
+      </Suspense>
     );
   }
 
@@ -92,6 +111,7 @@ function App() {
       )}
 
       <div className={isSystemRoute && user ? 'system-content' : 'public-content'}>
+        <Suspense fallback={<Esqueleto tipo="pagina" />}>
         <Routes>
           {/* PÚBLICAS */}
           <Route path="/" element={<Home />} />
@@ -109,7 +129,12 @@ function App() {
               ficha; el escaneo vive adentro de este mismo flujo. */}
           <Route path="/sistema/motores/nuevo" element={<ProtectedRoute requiere="editor"> <NuevoMotor /> </ProtectedRoute>} />
           <Route path="/sistema/motores/editar/:id" element={<ProtectedRoute> <MotorForm /> </ProtectedRoute>} />
-          <Route path="/sistema/motores/ver/:id" element={<ProtectedRoute> <MotorForm /> </ProtectedRoute>} />
+          {/* Ver y editar son dos pantallas distintas. Compartian el
+              formulario con los campos apagados, y leer una ficha --que
+              es lo que se hace todo el dia-- significaba recorrer veinte
+              casilleros grises, la mayoria vacios, para encontrar un
+              numero. */}
+          <Route path="/sistema/motores/ver/:id" element={<ProtectedRoute> <FichaMotor /> </ProtectedRoute>} />
 
           {/* La seccion de fichas ya no existe: quedo integrada en el alta.
               Los links viejos van al alta en vez de dar 404. */}
@@ -134,10 +159,11 @@ function App() {
           <Route path="/sistema/reparaciones/:id" element={<ProtectedRoute> <ReparacionDetalle /> </ProtectedRoute>} />
           <Route path="/sistema/remitos/:id" element={<ProtectedRoute requiere="editor"> <RemitoForm /> </ProtectedRoute>} />
           <Route path="/sistema/clientes" element={<ProtectedRoute> <Clientes /> </ProtectedRoute>} />
-          <Route path="/sistema/informes" element={<ProtectedRoute> <ComingSoon title="Informes y Estadísticas" /> </ProtectedRoute>} />
+          <Route path="/sistema/informes" element={<ProtectedRoute> <Informes /> </ProtectedRoute>} />
 
           <Route path="/sistema" element={<Navigate to="/sistema/home" replace />} />
         </Routes>
+        </Suspense>
       </div>
     </div>
   );

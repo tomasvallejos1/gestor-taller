@@ -1,14 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Plus, Search, Pencil, Trash2, SlidersHorizontal, X, PackageOpen,
+  Plus, Search, Pencil, Trash2, SlidersHorizontal, X, PackageOpen, Sparkles,
 } from 'lucide-react';
 import Modal from '../components/Modal';
 import Alert from '../components/ui/Alert';
-import Spinner from '../components/ui/Spinner';
+import Esqueleto from '../components/Esqueleto';
 import MenuAcciones, { ItemMenu } from '../components/ui/MenuAcciones';
 import { useAuth } from '../context/AuthContext';
-import { listarMotores, eliminarMotor, etiquetaPotencia } from '../lib/motores';
+import {
+  listarMotores, eliminarMotor, etiquetaPotencia, traducirBusqueda,
+} from '../lib/motores';
+import Hoja from '../components/Hoja';
+import Button from '../components/ui/Button';
 
 /**
  * Listado de motores.
@@ -22,7 +26,15 @@ import { listarMotores, eliminarMotor, etiquetaPotencia } from '../lib/motores';
  * abre a pedido.
  */
 
-const FILTROS_VACIOS = { nro: '', texto: '', marca: '', modelo: '', hp: '', tipo: '' };
+const FILTROS_VACIOS = {
+  nro: '', texto: '', marca: '', modelo: '', hp: '', tipo: '', duenio: '',
+};
+
+/** Como se nombra cada filtro cuando se muestra puesto. */
+const ETIQUETA_FILTRO = {
+  nro: 'Ficha N°', texto: 'Texto', marca: 'Marca', modelo: 'Modelo',
+  hp: 'HP', tipo: 'Tipo o uso', duenio: 'Cliente',
+};
 const ORDEN_POR_DEFECTO = 'recientes';
 
 const Motores = () => {
@@ -38,6 +50,13 @@ const Motores = () => {
 
   const [aBorrar, setABorrar] = useState(null);
   const [borrando, setBorrando] = useState(false);
+
+  const [preguntando, setPreguntando] = useState(false);
+  const [pregunta, setPregunta] = useState('');
+  const [traduciendo, setTraduciendo] = useState(false);
+  // Se guarda que campos puso la IA para poder decir "esto entendi". Un
+  // filtro que se aplica sin que se vea es indistinguible de un error.
+  const [interpretado, setInterpretado] = useState(null);
 
   const buscar = useCallback(async (f, o) => {
     setCargando(true);
@@ -81,6 +100,45 @@ const Motores = () => {
     .filter(([k, v]) => k !== 'texto' && String(v).trim())
     .length + (orden !== ORDEN_POR_DEFECTO ? 1 : 0);
 
+  /**
+   * Pregunta escrita -> filtros aplicados.
+   *
+   * Lo que devuelve el traductor reemplaza los filtros anteriores en vez
+   * de sumarse: dos busquedas encadenadas que se acumulan dan cero
+   * resultados y nadie entiende por que.
+   */
+  const preguntar = async (e) => {
+    e?.preventDefault();
+    const texto = pregunta.trim();
+    if (!texto) return;
+
+    setTraduciendo(true);
+    setError('');
+    try {
+      const r = await traducirBusqueda(texto);
+      setFiltros({ ...FILTROS_VACIOS, ...r.filtros });
+      setInterpretado({ ...r.filtros, __degradado: r.degradado });
+      setPreguntando(false);
+      setPregunta('');
+    } catch (err) {
+      setError(err.message ?? 'No se pudo interpretar la busqueda.');
+    } finally {
+      setTraduciendo(false);
+    }
+  };
+
+  const quitarFiltro = (campo) => {
+    setFiltros((f) => ({ ...f, [campo]: '' }));
+    setInterpretado((i) => {
+      if (!i) return i;
+      const resto = { ...i };
+      delete resto[campo];
+      // Sin ningun campo puesto, la tira de "esto entendi" no tiene nada
+      // que decir y se va sola.
+      return Object.keys(resto).filter((k) => !k.startsWith('__')).length ? resto : null;
+    });
+  };
+
   const confirmarBorrado = async () => {
     if (!aBorrar) return;
     setBorrando(true);
@@ -99,6 +157,36 @@ const Motores = () => {
 
   const titulo = (m) => m.descripcion || m.marca || `Ficha ${m.nro_motor}`;
   const subtitulo = (m) => [m.marca, m.modelo].filter(Boolean).join(' · ');
+
+  /**
+   * Los filtros puestos, uno por chip, con su cruz para sacarlo.
+   *
+   * El punto rojo sobre el embudo avisaba de que la lista venia
+   * recortada, pero no de por que: habia que abrir el panel y recorrer
+   * seis campos para descubrir cual tenia algo escrito. Con el filtro a
+   * la vista, sacarlo es un toque y no hace falta abrir nada.
+   */
+  const ETIQUETA_FILTRO = {
+    nro: 'N°', marca: 'Marca', modelo: 'Modelo', hp: 'Potencia', tipo: 'Tipo',
+  };
+  const ETIQUETA_ORDEN = {
+    antiguos: 'Más antiguas', nro_desc: 'N° más alto', nro_asc: 'N° más bajo',
+  };
+
+  const chipsActivos = [
+    ...Object.entries(filtros)
+      .filter(([k, v]) => k !== 'texto' && String(v).trim())
+      .map(([k, v]) => ({
+        clave: k,
+        texto: `${ETIQUETA_FILTRO[k] ?? k}: ${v}`,
+        quitar: () => setFiltros((f) => ({ ...f, [k]: '' })),
+      })),
+    ...(orden !== ORDEN_POR_DEFECTO ? [{
+      clave: 'orden',
+      texto: ETIQUETA_ORDEN[orden] ?? orden,
+      quitar: () => setOrden(ORDEN_POR_DEFECTO),
+    }] : []),
+  ];
 
   return (
     <div>
@@ -122,8 +210,8 @@ const Motores = () => {
             name="texto"
             value={filtros.texto}
             onChange={cambiarFiltro}
-            placeholder="Buscar por descripcion, marca o uso"
-            aria-label="Buscar fichas"
+            placeholder="Buscar por N°, descripcion o marca"
+            aria-label="Buscar fichas por numero, descripcion o marca"
           />
           {filtros.texto && (
             <button type="button" className="buscador__limpiar" aria-label="Borrar la busqueda"
@@ -132,6 +220,17 @@ const Motores = () => {
             </button>
           )}
         </div>
+
+        {/* Preguntar con palabras y filtrar a mano son la misma accion
+            por dos caminos: van juntos, al lado del buscador. */}
+        <button
+          type="button"
+          className={`icono-btn${interpretado ? ' icono-btn--activo' : ''}`}
+          aria-label="Buscar escribiendo una pregunta"
+          onClick={() => setPreguntando(true)}
+        >
+          <Sparkles size={17} />
+        </button>
 
         <div className="icono-btn-wrap">
           <button
@@ -177,6 +276,11 @@ const Motores = () => {
                 placeholder="bombeador" />
             </div>
             <div>
+              <label className="campo-label" htmlFor="f-duenio">Cliente</label>
+              <input id="f-duenio" name="duenio" value={filtros.duenio} onChange={cambiarFiltro}
+                placeholder="Apellido del dueño" />
+            </div>
+            <div>
               <label className="campo-label" htmlFor="f-orden">Ordenar</label>
               <select id="f-orden" value={orden} onChange={(e) => setOrden(e.target.value)}>
                 <option value="recientes">Mas nuevas</option>
@@ -196,20 +300,85 @@ const Motores = () => {
         </div>
       )}
 
+      {chipsActivos.length > 0 && (
+        <div className="filtros-activos">
+          {chipsActivos.map((c) => (
+            <button key={c.clave} type="button" className="chip-filtro" onClick={c.quitar}>
+              {c.texto}
+              <X size={13} aria-hidden="true" />
+              <span className="sr-solo">Quitar este filtro</span>
+            </button>
+          ))}
+          <button type="button" className="chip-filtro chip-filtro--todo" onClick={limpiar}>
+            Quitar todos
+          </button>
+        </div>
+      )}
+
+      {interpretado && (
+        <div className="leido">
+          <span className="leido__rotulo">
+            {interpretado.__degradado ? 'Busque tal cual lo escribiste' : 'Entendí'}
+          </span>
+          {Object.entries(interpretado)
+            .filter(([campo, valor]) => !campo.startsWith('__') && valor)
+            .map(([campo, valor]) => (
+              <button key={campo} type="button" className="leido__chip"
+                onClick={() => quitarFiltro(campo)}
+                aria-label={`Quitar el filtro ${ETIQUETA_FILTRO[campo]}`}>
+                {ETIQUETA_FILTRO[campo]}: <strong>{valor}</strong>
+                <X size={13} aria-hidden="true" />
+              </button>
+            ))}
+          <button type="button" className="leido__limpiar"
+            onClick={() => { setFiltros(FILTROS_VACIOS); setInterpretado(null); }}>
+            Limpiar
+          </button>
+        </div>
+      )}
+
       {error ? <Alert variant="error" className="mb-3">{error}</Alert> : null}
+
+      {/* Cuantas hay, antes de la lista y no despues.
+          Al pie solo se leia despues de recorrer las cincuenta, que es
+          justo cuando ya no sirve saber que eran cincuenta. */}
+      {!cargando && motores.length > 0 && (
+        <p className="contador contador--arriba">
+          {motores.length === total
+            ? `${total} ${total === 1 ? 'ficha' : 'fichas'}`
+            : `${motores.length} de ${total} fichas`}
+        </p>
+      )}
 
       {cargando ? (
         <div style={{ padding: '48px 0' }}>
-          <Spinner label="Buscando fichas..." centered />
+          <Esqueleto tipo="lista" />
         </div>
       ) : motores.length === 0 ? (
+        /* Un vacio sin salida deja a la persona mirando el cartel.
+           Buscando, la salida es soltar la busqueda; sin fichas todavia,
+           es cargar la primera. */
         <div className="vacio">
           <PackageOpen size={26} />
-          <div>
-            {filtros.texto || avanzadosPuestos
-              ? 'Ninguna ficha coincide con la busqueda.'
-              : 'Todavia no hay fichas cargadas.'}
-          </div>
+          {filtros.texto || avanzadosPuestos ? (
+            <>
+              <div>Ninguna ficha coincide con la búsqueda.</div>
+              <button type="button" className="btn btn-secondary"
+                onClick={() => { setFiltros(FILTROS_VACIOS); setOrden(ORDEN_POR_DEFECTO); }}>
+                Limpiar la búsqueda
+              </button>
+            </>
+          ) : (
+            <>
+              <div>Todavía no hay fichas cargadas.</div>
+              {esEditor && (
+                <Link to="/sistema/motores/nuevo" className="btn btn-primary"
+                  style={{ textDecoration: 'none' }}>
+                  <Plus size={16} /> Cargar la primera
+                </Link>
+              )}
+            </>
+          )}
         </div>
       ) : (
         <ul className="lista">
@@ -253,12 +422,47 @@ const Motores = () => {
         </ul>
       )}
 
-      {motores.length > 0 && (
+      {/* Al pie queda solo el aviso de que la lista viene cortada, que es
+          lo unico que hace falta saber justo ahi abajo. */}
+      {motores.length > 0 && motores.length < total && (
         <div className="contador">
-          {motores.length === total
-            ? `${total} ${total === 1 ? 'ficha' : 'fichas'}`
-            : `${motores.length} de ${total} fichas`}
+          Se muestran las primeras {motores.length} de {total}. Afiná la búsqueda para ver el resto.
         </div>
+      )}
+
+      {preguntando && (
+        <Hoja
+          titulo="Buscar con palabras"
+          ayuda="Escribí lo que buscás como se lo dirías a alguien del taller. Se traduce a filtros y podés corregirlos después."
+          onCerrar={() => setPreguntando(false)}
+          pie={(
+            <>
+              <button type="button" className="btn btn-secondary"
+                onClick={() => setPreguntando(false)}>
+                Cancelar
+              </button>
+              <Button variant="primary" onClick={preguntar} isLoading={traduciendo}>
+                Buscar
+              </Button>
+            </>
+          )}
+        >
+          <form className="hoja__form" onSubmit={preguntar}>
+            <textarea
+              className="ui-input"
+              rows={3}
+              autoFocus
+              style={{ resize: 'vertical' }}
+              value={pregunta}
+              onChange={(e) => setPregunta(e.target.value)}
+              placeholder="Ej: los trifásicos de 5 HP que rebobinamos para González"
+            />
+            <p className="campo-ayuda">
+              Entiende marca, modelo, potencia, tipo o uso, número de ficha y el cliente
+              dueño del motor. Lo que no reconoce lo busca como texto.
+            </p>
+          </form>
+        </Hoja>
       )}
 
       <Modal
